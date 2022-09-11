@@ -1146,14 +1146,14 @@ bool World::sprayTexture(glm::vec3 const& pos, Brush *brush, float strength, flo
   return succ;
 }
 
-bool World::replaceTexture(glm::vec3 const& pos, float radius, scoped_blp_texture_reference const& old_texture, scoped_blp_texture_reference new_texture)
+bool World::replaceTexture(glm::vec3 const& pos, float radius, scoped_blp_texture_reference const& old_texture, scoped_blp_texture_reference new_texture, bool entire_chunk)
 {
   return for_all_chunks_in_range
     ( pos, radius
       , [&](MapChunk* chunk)
       {
         NOGGIT_CUR_ACTION->registerChunkTextureChange(chunk);
-        return chunk->replaceTexture(pos, radius, old_texture, new_texture);
+        return chunk->replaceTexture(pos, radius, old_texture, new_texture, entire_chunk);
       }
     );
 }

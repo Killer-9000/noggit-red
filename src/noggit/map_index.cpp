@@ -230,9 +230,15 @@ void MapIndex::save()
     SetChunkHeader(wdtFile, curPos, 'MPHD', sizeof(MPHD));
     curPos += 8;
 
-    wdtFile.Insert(curPos, sizeof(MPHD), (char*)&mphd);
-    curPos += sizeof(MPHD);
-  }
+  mphd.flags = 0;
+  mphd.something = 0;
+  if (mBigAlpha)
+      mphd.flags |= 4;
+  if (_sort_models_by_size_class)
+      mphd.flags |= 8;
+
+  wdtFile.Insert(curPos, sizeof(MPHD), (char*)&mphd);
+  curPos += sizeof(MPHD);
 
   // MAIN
   {
