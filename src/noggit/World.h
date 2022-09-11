@@ -2,35 +2,37 @@
 
 #pragma once
 
-#include <math/frustum.hpp>
-#include <math/trig.hpp>
-#include <noggit/rendering/CursorRender.hpp>
-#include <noggit/Misc.h>
-#include <noggit/Model.h> // ModelManager
-#include <noggit/Selection.h>
-#include <noggit/Sky.h> // Skies, OutdoorLighting, OutdoorLightStats
-#include <noggit/WMO.h> // WMOManager
-#include <noggit/map_horizon.h>
-#include <noggit/map_index.hpp>
-#include <noggit/TileIndex.hpp>
-#include <noggit/tool_enums.hpp>
-#include <noggit/world_tile_update_queue.hpp>
-#include <noggit/world_model_instances_storage.hpp>
-#include <noggit/ui/MinimapCreator.hpp>
-#include <noggit/ContextObject.hpp>
-#include <noggit/rendering/Primitives.hpp>
 #include <opengl/shader.fwd.hpp>
 #include <opengl/types.hpp>
+#include <noggit/ContextObject.hpp>
+#include <noggit/map_horizon.h>
+#include <noggit/map_index.hpp>
+#include <noggit/Misc.h>
+#include <noggit/Model.h> // ModelManager
+#include <noggit/project/ApplicationProject.h>
+#include <noggit/rendering/CursorRender.hpp>
 #include <noggit/rendering/LiquidTextureManager.hpp>
-#include <optional>
+#include <noggit/rendering/Primitives.hpp>
+#include <noggit/rendering/WorldRender.hpp>
+#include <noggit/Selection.h>
+#include <noggit/Sky.h> // Skies, OutdoorLighting, OutdoorLightStats
+#include <noggit/TileIndex.hpp>
+#include <noggit/tool_enums.hpp>
+#include <noggit/ui/MinimapCreator.hpp>
+#include <noggit/WMO.h> // WMOManager
+#include <noggit/world_model_instances_storage.hpp>
+#include <noggit/world_tile_update_queue.hpp>
+#include <math/frustum.hpp>
+#include <math/trig.hpp>
+
 #include <QtCore/QSettings>
+
+#include <array>
 #include <map>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include <array>
-#include <noggit/project/ApplicationProject.h>
-#include <noggit/rendering/WorldRender.hpp>
 
 namespace Noggit
 {

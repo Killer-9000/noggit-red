@@ -463,7 +463,7 @@ bool Skies::draw(glm::mat4x4 const& model_view
     return false;
   }
 
-  if (!_uploaded)
+  if (!_uploaded) [[unlikely]]
   {
     upload();
   }
@@ -485,7 +485,7 @@ bool Skies::draw(glm::mat4x4 const& model_view
       OpenGL::Scoped::vao_binder const _ (_vao);
        
       shader.uniform("model_view_projection", projection * model_view);
-      shader.uniform("camera_pos", glm::vec3(camera_pos.x, camera_pos.y, camera_pos.z));
+      shader.uniform("camera_pos", camera_pos);
 
       gl.drawElements(GL_TRIANGLES, _indices_count, GL_UNSIGNED_SHORT, nullptr);
     }
@@ -609,40 +609,12 @@ void Skies::unload()
 
 void Skies::upload()
 {
-  _program.reset(new OpenGL::program(
-    {
-        {GL_VERTEX_SHADER, R"code(
-#version 330 core
-
-uniform mat4 model_view_projection;
-uniform vec3 camera_pos;
-
-in vec3 position;
-in vec3 color;
-
-out vec3 f_color;
-
-void main()
-{
-  vec4 pos = vec4(position + camera_pos, 1.f);
-  gl_Position = model_view_projection * pos;
-  f_color = color;
-}
-)code" }
-        , {GL_FRAGMENT_SHADER, R"code(
-#version 330 core
-
-in vec3 f_color;
-
-out vec4 out_color;
-
-void main()
-{
-  out_color = vec4(f_color, 1.);
-}
-)code" }
-    }
-  ));
+  _program.reset
+    ( new OpenGL::program
+        { { GL_VERTEX_SHADER,   OpenGL::shader::src_from_qrc("sky_vs") }
+        , { GL_FRAGMENT_SHADER, OpenGL::shader::src_from_qrc("sky_fs") }
+        }
+    );
 
   _vertex_array.upload();
   _buffers.upload();
@@ -727,6 +699,7 @@ void Skies::update_color_buffer()
   gl.bufferData<GL_ARRAY_BUFFER, glm::vec3>(_colors_vbo, colors, GL_STATIC_DRAW);
 
   _need_vao_update = true;
+  _need_color_buffer_update = false;
 }
 
 

@@ -3,6 +3,8 @@
 #include <noggit/scripting/scripting_tool.hpp>
 #include <noggit/scripting/script_exception.hpp>
 #include <noggit/scripting/script_context.hpp>
+#include <FastNoise/FastNoise.h>
+
 namespace Noggit
 {
   namespace Scripting
@@ -109,34 +111,20 @@ namespace Noggit
           upper += std::toupper(character);
  
       FastNoise::SmartNode<> generator = nullptr;
-      if(upper=="SIMPLEX")
-      {
+      if (upper == "SIMPLEX")
         generator = FastNoise::New<FastNoise::Simplex>();
-      }
-      else if(upper=="PERLIN")
-      {
+      else if (upper == "PERLIN")
         generator = FastNoise::New<FastNoise::Perlin>();
-      }
-      else if(upper=="VALUE")
-      {
+      else if (upper == "VALUE")
         generator = FastNoise::New<FastNoise::Value>();
-      }
-      else if(upper=="FRACTAL")
-      {
+      else if (upper == "FRACTAL")
         generator = FastNoise::New<FastNoise::FractalFBm>();
-      }
-      else if(upper=="CELLULAR")
-      {
+      else if (upper == "CELLULAR")
         generator = FastNoise::New<FastNoise::CellularValue>();
-      }
-      else if(upper=="WHITE")
-      {
+      else if (upper == "WHITE")
         generator = FastNoise::New<FastNoise::White>();
-      }
       else
-      {
         generator = FastNoise::NewFromEncodedNodeTree(algorithm.c_str());
-      }
 
       generator->GenUniformGrid2D(
           get_map()

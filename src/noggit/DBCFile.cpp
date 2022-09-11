@@ -21,10 +21,6 @@ auto write(std::ostream& stream, T const& val) -> void
   stream.write(reinterpret_cast<char const*>(&val), sizeof(T));
 }
 
-DBCFile::DBCFile(const std::string& _filename)
-  : filename(_filename)
-{}
-
 void DBCFile::open(std::shared_ptr<BlizzardArchive::ClientData> clientData)
 {
   BlizzardArchive::ClientFile f (filename, clientData.get());

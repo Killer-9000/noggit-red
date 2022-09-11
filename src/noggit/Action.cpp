@@ -192,14 +192,14 @@ void Noggit::Action::undo(bool redo)
   {
     _map_view->getWorld()->setVertexSelectionCache(redo ? _vertex_selection_post : _vertex_selection_pre);
   }
-  if (_flags & ActionFlags::eCHUNK_SHADOWS)
-  {
-    for (auto& pair : redo ? _chunk_shadow_map_post : _chunk_shadow_map_pre)
-    {
-      std::memcpy(&pair.first->_shadow_map, pair.second.data(), 64 * 64 * sizeof(uint8_t));
-      pair.first->update_shadows();
-    }
-  }
+  //if (_flags & ActionFlags::eCHUNK_SHADOWS)
+  //{
+  //  for (auto& pair : redo ? _chunk_shadow_map_post : _chunk_shadow_map_pre)
+  //  {
+  //    std::memcpy(&pair.first->_shadow_map, pair.second.data(), 64 * 64 * sizeof(uint8_t));
+  //    pair.first->update_shadows();
+  //  }
+  //}
 
 }
 

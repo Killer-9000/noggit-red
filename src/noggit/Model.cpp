@@ -9,7 +9,6 @@
 #include <noggit/World.h>
 #include <opengl/scoped.hpp>
 #include <opengl/shader.hpp>
-#include <external/tracy/Tracy.hpp>
 #include <noggit/application/NoggitApplication.hpp>
 #include <util/CurrentFunction.hpp>
 
@@ -513,15 +512,15 @@ void Model::animate(glm::mat4x4 const& model_view, int anim_id, int anim_time)
 
     for (auto& vertex : _current_vertices)
     {
-      ::glm::vec3 v(0, 0, 0), n(0, 0, 0);
+      glm::vec3 v(0, 0, 0), n(0, 0, 0);
 
       for (size_t b (0); b < 4; ++b)
       {
         if (vertex.weights[b] <= 0)
           continue;
 
-        ::glm::vec3 tv = bones[vertex.bones[b]].mat * vertex.position;
-        ::glm::vec3 tn = bones[vertex.bones[b]].mrot * vertex.normal;
+        glm::vec3 tv = bones[vertex.bones[b]].mat * vertex.position;
+        glm::vec3 tn = bones[vertex.bones[b]].mrot * vertex.normal;
 
         v += tv * (static_cast<float> (vertex.weights[b]) / 255.0f);
         n += tn * (static_cast<float> (vertex.weights[b]) / 255.0f);
@@ -598,8 +597,8 @@ ModelLight::ModelLight(const BlizzardArchive::ClientFile& f, const ModelLightDef
   , parent (mld.bone)
   , pos (fixCoordSystem(mld.pos))
   , tpos (fixCoordSystem(mld.pos))
-  , dir (::glm::vec3(0,1,0))
-  , tdir (::glm::vec3(0,1,0)) // obviously wrong
+  , dir (glm::vec3(0,1,0))
+  , tdir (glm::vec3(0,1,0)) // obviously wrong
   , diffColor (mld.color, f, global)
   , ambColor (mld.ambColor, f, global)
   , diffIntensity (mld.intensity, f, global)

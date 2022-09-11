@@ -4,6 +4,7 @@
 #include <noggit/ui/windows/noggitWindow/widgets/MapListItem.hpp>
 #include <noggit/ui/windows/noggitWindow/NoggitWindow.hpp>
 #include <noggit/application/Utils.hpp>
+#include <noggit/ui/FontAwesome.hpp>
 #include <QMenuBar>
 #include <QAction>
 #include <QObject>
@@ -22,7 +23,7 @@ void BuildMapListComponent::buildMapList(Noggit::Ui::Windows::NoggitWindow* pare
   auto maps = std::vector<Widget::MapListData>();
   while (iterator.HasRecords())
   {
-    auto record = iterator.Next();
+    auto& record = iterator.Next();
 
     Widget::MapListData map_list_data{};
 

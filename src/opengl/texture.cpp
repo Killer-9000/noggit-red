@@ -1,7 +1,6 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
 #include <opengl/context.hpp>
-#include <opengl/context.inl>
 #include <opengl/texture.hpp>
 
 #include <utility>
@@ -37,9 +36,7 @@ namespace OpenGL
   void texture::bind()
   {
     if (_id == 0)
-    {
-      gl.genTextures (1, &_id);
-    }
+      gl.createTexturesEXT (GL_TEXTURE_2D, 1, &_id);
     gl.bindTexture (GL_TEXTURE_2D, _id);
   }
 

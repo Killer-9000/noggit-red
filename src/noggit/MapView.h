@@ -3,44 +3,43 @@
 #pragma once
 
 #include <math/ray.hpp>
-#include <noggit/Misc.h>
-#include <noggit/Selection.h>
 #include <noggit/BoolToggleProperty.hpp>
 #include <noggit/Camera.hpp>
+#include <noggit/Misc.h>
+#include <noggit/Selection.h>
+#include <noggit/TabletManager.hpp>
 #include <noggit/tool_enums.hpp>
-#include <noggit/ui/ObjectEditor.h>
 #include <noggit/ui/MinimapCreator.hpp>
-#include <noggit/ui/UidFixWindow.hpp>
-#include <noggit/unsigned_int_property.hpp>
+#include <noggit/ui/ObjectEditor.h>
 #include <noggit/ui/tools/AssetBrowser/Ui/AssetBrowser.hpp>
+#include <noggit/ui/tools/ToolPanel/ToolPanel.hpp>
 #include <noggit/ui/tools/ViewportGizmo/ViewportGizmo.hpp>
 #include <noggit/ui/tools/ViewportManager/ViewportManager.hpp>
-#include <noggit/ui/tools/ToolPanel/ToolPanel.hpp>
-#include <noggit/TabletManager.hpp>
-#include <external/qtimgui/QtImGui.h>
-#include <opengl/texture.hpp>
+#include <noggit/ui/UidFixWindow.hpp>
+#include <noggit/unsigned_int_property.hpp>
 #include <opengl/scoped.hpp>
-#include <optional>
+#include <opengl/texture.hpp>
+
+#include <external/qtimgui/QtImGui.h>
 
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QSettings>
 #include <QtCore/QTimer>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QOpenGLWidget>
 #include <QWidgetAction>
 #include <QOpenGLContext>
 
 #include <forward_list>
 #include <map>
-#include <unordered_map>
-#include <unordered_set>
 #include <thread>
 #include <array>
 #include <optional>
 
 #include <ui_MapViewOverlay.h>
 
+using namespace std::chrono_literals;
+namespace chro = std::chrono;
 
 class World;
 
@@ -365,7 +364,6 @@ private:
 
   Noggit::BoolToggleProperty _show_detail_info_window = {false};
   Noggit::BoolToggleProperty _show_minimap_window = {false};
-  Noggit::BoolToggleProperty _show_node_editor = {false};
   Noggit::BoolToggleProperty _show_minimap_borders = {true};
   Noggit::BoolToggleProperty _show_minimap_skies = {false};
   Noggit::BoolToggleProperty _show_keybindings_window = {false};
@@ -409,7 +407,6 @@ private:
   Noggit::Ui::Tools::AssetBrowser::Ui::AssetBrowserWidget* _asset_browser;
 
   QDockWidget* _asset_browser_dock;
-  QDockWidget* _node_editor_dock;
   QDockWidget* _texture_browser_dock;
   QDockWidget* _texture_picker_dock;
   QDockWidget* _detail_infos_dock;
@@ -434,7 +431,12 @@ private:
 
   OpenGL::Scoped::deferred_upload_buffers<2> _buffers;
 
-public:
+  chro::seconds autoSaveTime = 120s;
+  chro::seconds autoSaveWarningTime = 110s;
+  chro::seconds autoSaveTimeTicked = 0s;
+  bool saving = false;
+
+  float _farZ = 2048;
 
 private:
 
@@ -453,7 +455,6 @@ private:
   void setupLightEditorUi();
   void setupScriptingUi();
   void setupChunkManipulatorUi();
-  void setupNodeEditor();
   void setupAssetBrowser();
   void setupDetailInfos();
   void updateDetailInfos(bool no_sel_change_check = false);

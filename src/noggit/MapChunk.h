@@ -66,42 +66,39 @@ public:
   MapChunk(MapTile* mt, BlizzardArchive::ClientFile* f, bool bigAlpha, tile_mode mode, Noggit::NoggitRenderContext context
            , bool init_empty = false, int chunk_idx = 0);
 
+  ~MapChunk()
+  {
+    texture_set.reset();
+  }
+
   auto getHoleMask(void) const -> unsigned { return static_cast<unsigned>(holes); }
-  MapTile *mt;
-  glm::vec3 vmin, vmax, vcenter;
-  int px, py;
 
-  MapChunkHeader header;
-
-  float xbase, ybase, zbase;
-
-  mcnk_flags header_flags;
-  bool use_big_alphamap;
-
-  std::unique_ptr<TextureSet> texture_set;
-
-  int holes;
-  bool currently_paintable = true;
-
-  unsigned int areaID;
-
-  glm::vec3 mVertices[mapbufsize];
-  glm::vec3 mNormals[mapbufsize];
-  glm::vec3 mccv[mapbufsize];
-
-  uint8_t _shadow_map[64 * 64];
-
-  void update_shadows();
+  void update_shadows(GLuint texture);
 
   void unload();
 
   static int indexNoLoD(int x, int y);
   static int indexLoD(int x, int y);
 
+  MapTile *mt;
+  glm::vec3 vmin, vmax, vcenter;
+  int px, py;
+  MapChunkHeader header;
+  float xbase, ybase, zbase;
+  mcnk_flags header_flags;
+  bool use_big_alphamap;
+  std::unique_ptr<TextureSet> texture_set;
+  int holes;
+  bool currently_paintable = true;
+  unsigned int areaID;
+  glm::vec3 mVertices[mapbufsize];
+  glm::vec3 mNormals[mapbufsize];
+  glm::vec3 mccv[mapbufsize];
+  uint8_t _shadow_map[64 * 64];
+
 private:
 
   unsigned _chunk_update_flags;
-
   Noggit::NoggitRenderContext _context;
 
 public:
@@ -200,7 +197,7 @@ public:
   glm::vec3 const* getNormals() const { return &mNormals[0]; }
   glm::vec3* getVertexColors() { return &mccv[0]; };
 
-  void update_vertex_colors();
+  void update_vertex_colors(GLuint texture);
 
   QImage getHeightmapImage(float min_height, float max_height);
   QImage getAlphamapImage(unsigned layer);

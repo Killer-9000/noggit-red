@@ -2,12 +2,11 @@
 
 #include "map_horizon.h"
 
-#include <noggit/Log.h>
 #include <noggit/application/NoggitApplication.hpp>
+#include <noggit/Log.h>
 #include <noggit/map_index.hpp>
 #include <noggit/World.h>
 #include <opengl/context.hpp>
-#include <opengl/context.inl>
 
 #include <sstream>
 
@@ -237,10 +236,10 @@ map_horizon::minimap::minimap(const map_horizon& horizon)
     }
   }
 
-  bind();
-  gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1024, 1024, 0, GL_BGRA, GL_UNSIGNED_BYTE, texture.data());
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  gl.namedTextureStorage2DEXT(_id, 1, GL_RGBA8, 1024, 1024);
+  gl.namedTextureSubImage2DEXT(_id, 0, 0, 0, 1024, 1024, GL_BGRA, GL_UNSIGNED_BYTE, texture.data());
+  gl.namedTextureParameteriEXT(_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  gl.namedTextureParameteriEXT(_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
 
 map_horizon::render::render(const map_horizon& horizon)
@@ -323,9 +322,9 @@ void map_horizon::render::draw( glm::mat4x4 const& model_view
       if (batch.vertex_count == 0)
         continue;
 
-      for (size_t j (0); j < 16; ++j)
+      for (int j (0); j < 16; ++j)
       {
-        for (size_t i (0); i < 16; ++i)
+        for (int i (0); i < 16; ++i)
         {
           // do not draw over visible chunks
 

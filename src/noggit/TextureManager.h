@@ -2,25 +2,26 @@
 
 #pragma once
 
+#include <opengl/texture.hpp>
+#include <opengl/context.hpp>
+#include <opengl/scoped.hpp>
+#include <opengl/shader.hpp>
 #include <noggit/AsyncObject.h>
 #include <noggit/ContextObject.hpp>
 #include <noggit/AsyncObjectMultimap.hpp>
-#include <opengl/texture.hpp>
-#include <opengl/context.hpp>
-#include <opengl/context.inl>
-#include <opengl/scoped.hpp>
-#include <opengl/shader.hpp>
 
+#include <QtGui/QPixmap>
+#include <QtGui/QOpenGLContext>
+#include <QtGui/QOpenGLFramebufferObject>
 #include <QtGui/QOffscreenSurface>
-#include <QtGui/QOpenGLFramebufferObjectFormat>
-#include <QtOpenGL/QGLPixelBuffer>
-#include <optional>
-#include <map>
-#include <unordered_map>
-#include <string>
-#include <vector>
+
 #include <array>
+#include <map>
+#include <optional>
+#include <string>
 #include <tuple>
+#include <unordered_map>
+#include <vector>
 
 
 struct tuple_hash
@@ -54,13 +55,13 @@ struct blp_texture : public AsyncObject
 
   void bind();
   void upload();
-  void uploadToArray(unsigned layer);
+  void uploadToArray(GLuint array, unsigned layer);
   void unload();
   bool is_uploaded() { return _uploaded; };
   GLuint texture_array() { return _texture_array; };
   int array_index() { return _array_index; };
   bool is_specular() { return _is_specular; };
-  unsigned mip_level() { return !_compression_format ? _data.size() : _compressed_data.size(); };
+  size_t mip_level() { return !_compression_format ? _data.size() : _compressed_data.size(); };
 
   std::map<int, std::vector<uint32_t>>& data() { return _data;};
   std::map<int, std::vector<uint8_t>>& compressed_data() { return _compressed_data; };

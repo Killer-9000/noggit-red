@@ -16,8 +16,8 @@ namespace Noggit::Rendering
   {
     std::uint32_t flags;
     std::uint32_t shader;
-    std::uint32_t tex_array0;
-    std::uint32_t tex_array1;
+    GLuint tex_array0;
+    GLuint tex_array1;
     std::uint32_t tex0;
     std::uint32_t tex1;
     std::uint32_t alpha_test_mode;
@@ -35,7 +35,7 @@ namespace Noggit::Rendering
 
   struct WMOCombinedDrawCall
   {
-    std::vector<int> samplers;
+    std::vector<GLuint> samplers;
     std::uint32_t index_start = 0;
     std::uint32_t index_count = 0;
     std::uint32_t n_used_samplers = 0;

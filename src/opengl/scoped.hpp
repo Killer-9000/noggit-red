@@ -3,7 +3,6 @@
 #pragma once
 #include <opengl/texture.hpp>
 #include <opengl/context.hpp>
-#include <opengl/context.inl>
 #include <optional>
 #include <stdexcept>
 
@@ -143,7 +142,7 @@ namespace OpenGL
       GLuint _vertex_arrays[count];
     };
 
-    template<std::size_t count>
+    template<GLenum target, std::size_t count>
     class deferred_upload_textures
     {
     public:

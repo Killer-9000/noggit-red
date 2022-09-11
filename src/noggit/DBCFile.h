@@ -14,10 +14,19 @@
 class DBCFile
 {
 public:
-  explicit DBCFile(const std::string& filename);
+  explicit DBCFile() { };
+  explicit DBCFile(const std::string& filename)
+  {
+    this->filename = filename;
+  }
 
   // Open database. It must be openened before it can be used.
   void open(std::shared_ptr<BlizzardArchive::ClientData> clientData);
+  void open(std::shared_ptr<BlizzardArchive::ClientData> clientData, const std::string& filename)
+  {
+    this->filename = filename;
+    open(clientData);
+  }
   void save();
 
   class NotFound : public std::runtime_error
@@ -99,10 +108,10 @@ public:
       }
 
       size_t old_size = file.stringTable.size();
-      *reinterpret_cast<unsigned int*>(offset + field * 4) = file.stringTable.size();
+      *reinterpret_cast<unsigned int*>(offset + field * 4) = (uint32_t)file.stringTable.size();
       file.stringTable.resize(old_size + val.size() + 1);
       std::copy(val.c_str(), val.c_str() + val.size() + 1, file.stringTable.data() + old_size);
-      file.stringSize += val.size() + 1;
+      file.stringSize += (uint32_t)val.size() + 1;
     }
 
     void writeLocalizedString(size_t field, const std::string& val, int locale)
@@ -116,10 +125,10 @@ public:
       }
 
       size_t old_size = file.stringTable.size();
-      *reinterpret_cast<unsigned int*>(offset + ((field + locale) * 4)) = file.stringTable.size();
+      *reinterpret_cast<unsigned int*>(offset + ((field + locale) * 4)) = (uint32_t)file.stringTable.size();
       file.stringTable.resize(old_size + val.size() + 1);
       std::copy(val.c_str(), val.c_str() + val.size() + 1, file.stringTable.data() + old_size);
-      file.stringSize += val.size() + 1;
+      file.stringSize += (uint32_t)val.size() + 1;
     }
 
   private:
@@ -189,10 +198,10 @@ public:
 
 private:
   std::string filename;
-  std::uint32_t recordSize;
-  std::uint32_t recordCount;
-  std::uint32_t fieldCount;
-  std::uint32_t stringSize;
+  uint32_t recordSize;
+  uint32_t recordCount;
+  uint32_t fieldCount;
+  uint32_t stringSize;
   std::vector<unsigned char> data;
   std::vector<char> stringTable;
 };

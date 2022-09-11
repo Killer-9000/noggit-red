@@ -6,7 +6,8 @@
 #include <noggit/scripting/script_filesystem.hpp>
 
 #include <sol/sol.hpp>
-#include <lodepng.h>
+#include <util/stb_image.h>
+#include <util/stb_image_write.h>
 
 namespace Noggit
 {
@@ -27,19 +28,18 @@ namespace Noggit
         _size = width*height*4;
         _width = width;
         _height = height;
-        _image.resize(_width * _height * 4);
     }
 
     image::image(script_context * ctx, std::string const& path)
     : script_object(ctx)
     {
-      unsigned error = lodepng::decode(_image, _width, _height, path);
-      if (error)
+      int channels;
+      _image = std::shared_ptr<uint8_t>(stbi_load(path.c_str(), (int*)&_width, (int*)&_height, &channels, 4));
+      if (!_image)
       {
-        throw script_exception(
-          "img_load_png",
-          "failed to load png image with error code:"
-          + std::to_string (error));
+        throw script_exception("img_load_png",
+          std::string("failed to load png image with error code: ") + stbi_failure_reason()
+        );
       }
       resize(_width, _height);
     }
@@ -130,13 +130,10 @@ namespace Noggit
     {
       auto writable_path = get_writable_path("image::save", state(), filename);
       mkdirs(writable_path.string());
-      unsigned error = lodepng::encode(writable_path.string(), get_image(), _width, _height);
-      if (error)
+      if (!stbi_write_png(writable_path.string().c_str(), _width, _height, 0, get_image(), 0))
       {
-        throw script_exception(
-          "img_save",
-          "failed to save image with error "
-          + std::to_string (error));
+        throw script_exception("img_save",
+          std::string("failed to save image with error: ") + stbi_failure_reason());
       }
     }
 

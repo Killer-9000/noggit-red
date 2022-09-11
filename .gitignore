@@ -1,18 +1,20 @@
-/**
-!/bin/**
-!/cmake/**
-!/etc/**
-!/include/**
-!/media/**
-!/resources/**
-!/sql/**
-!/src/**
-!/test/**
-!/.idea/**
-!.gitignore
-!.CMakeLists.txt
-!COPYING
-!Doxyfile
-!README.md
-!todo_1.4.md
-!uid_fix_concept.md
+# /**
+# !/bin/**
+# !/cmake/**
+# !/etc/**
+# !/include/**
+# !/media/**
+# !/resources/**
+# !/sql/**
+# !/src/**
+# !/test/**
+# !/.idea/**
+# !.gitignore
+# !.CMakeLists.txt
+# !COPYING
+# !Doxyfile
+# !README.md
+# !todo_1.4.md
+# !uid_fix_concept.md
+.vscode
+build

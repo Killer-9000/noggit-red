@@ -1,5 +1,5 @@
-#include <glm/gtx/quaternion.hpp>
 #include <noggit/Camera.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace Noggit
 {
@@ -8,7 +8,6 @@ namespace Noggit
                   , math::degrees pitch_
                  )
     : position (position)
-    , move_speed (200.6f)
     , _roll (0.0f)
     , _yaw (0.f)
     , _pitch (0.f)

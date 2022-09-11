@@ -131,79 +131,156 @@ namespace Noggit
                              | QPainter::SmoothPixmapTransform
                              );
 
-
-
       if (world())
       {
         painter.drawImage (drawing_rect, world()->horizon._qt_minimap);
 
+        //auto start = std::chrono::system_clock::now();
         if (draw_boundaries())
         {
-          //! \todo Draw non-existing tiles aswell?
-          painter.setBrush (QColor (255, 255, 255, 30));
-          for (size_t i (0); i < 64; ++i)
+          // Draw base grid.
           {
-            for (size_t j (0); j < 64; ++j)
+            QVector<QLine> gridLines(128);
+            for (int i = 1; i < 64; i++) // Vertical
+              gridLines[i] = QLine(i * tile_size, 0, i * tile_size, 64 * tile_size);
+            for (int i = 1; i < 64; i++) // Horizontal
+              gridLines[i + 64] = QLine(0, i * tile_size, 64 * tile_size, i * tile_size);
+
+            // Draw Lines
+            painter.setPen(QColor(255, 255, 255, 32));
+            painter.drawLines(gridLines);
+          }
+
+          // Draw unloaded tiles.
+          {
+            QVector<QRect> rects(64 * 64);
+            // Collect rects.
+            for (int i = 0; i < 64 * 64; i++)
             {
-              TileIndex const tile (i, j);
-              bool changed = false;
-
-              if (world()->mapIndex.hasTile (tile))
+              TileIndex const tile(i / 64, i % 64);
+              if (world()->mapIndex.hasTile(tile))
               {
-                if (world()->mapIndex.tileLoaded (tile))
-                {
-                  if (world()->mapIndex.has_unsaved_changes(tile))
-                  {
-                    changed = true;
-                  }
-
-                  painter.setPen(QColor::fromRgbF(0.f, 0.f, 0.f, 0.6f));
-                }
-                else if (world()->mapIndex.isTileExternal(tile))
-                {
-                  painter.setPen(QColor::fromRgbF(1.0f, 0.7f, 0.5f, 0.6f));
-                }
-                else
-                {
-                  painter.setPen (QColor::fromRgbF (0.8f, 0.8f, 0.8f, 0.4f));
-                }
-              }
-              else
-              {
-                painter.setPen (QColor::fromRgbF (1.0f, 1.0f, 1.0f, 0.05f));
-              }
-
-              painter.drawRect ( QRect ( tile_size * i
-                                       , tile_size * j
-                                       , tile_size
-                                       , tile_size
-                                       )
-                               );
-
-              if (changed)
-              {
-                painter.setPen(QColor::fromRgbF(1.0f, 1.0f, 0.0f, 1.f));
-                painter.drawRect ( QRect ( tile_size * i + 1
-                                         , tile_size * j + 1
-                                         , tile_size - 2
-                                         , tile_size - 2
-                                         )
-                                 );
-              }
-              
-              if (_use_selection && _selected_tiles->at(64 * i + j))
-              {
-                painter.setPen(QColor::fromRgbF(1.0f, 0.0f, 0.0f, 1.f));
-                painter.drawRect ( QRect ( tile_size * i + 1
-                    , tile_size * j + 1
-                    , tile_size - 2
-                    , tile_size - 2
-                    )
-                );
+                  rects[i] = QRect(tile_size * (i / 64), tile_size * (i % 64), tile_size, tile_size);
               }
             }
+
+            // Draw Rects
+            painter.setPen(QColor(255, 255, 255, 64));
+            painter.drawRects(rects);
           }
+
+          //// Draw external tiles.
+          //{
+          //  // Collect rects.
+          //  for (int i = 0; i < 64 * 64; i++)
+          //  {
+          //    TileIndex const tile(i / 64, i % 64);
+          //    if (world()->mapIndex.hasTile(tile))
+          //    {
+          //      if (world()->mapIndex.tileLoaded(tile)) {}
+          //      else if (world()->mapIndex.isTileExternal(tile))
+          //        rects[i] = QRect((tile_size * i) / 64, (tile_size * i) % 64, tile_size, tile_size);
+          //    }
+          //  }
+          //
+          //  // Draw Rects
+          //  painter.setPen(QColor(255, 200, 128, 192));
+          //  painter.drawRects(rects);
+          //}
+          //
+          //// Draw loaded tiles.
+          //{
+          //  // Collect rects.
+          //  for (int i = 0; i < 64 * 64; i++)
+          //  {
+          //    TileIndex const tile(i / 64, i % 64);
+          //    if (world()->mapIndex.hasTile(tile))
+          //    {
+          //      if (world()->mapIndex.tileLoaded(tile))
+          //        rects[i] = QRect((tile_size * i) / 64, (tile_size * i) % 64, tile_size, tile_size);
+          //      else if (world()->mapIndex.isTileExternal(tile)) {}
+          //    }
+          //  }
+          //
+          //  // Draw Rects
+          //  painter.setPen(QColor(0, 0, 0, 192));
+          //  painter.drawRects(rects);
+          //}
         }
+        //auto end = std::chrono::system_clock::now();
+        //printf("New drawing style: %llims\n", (end - start).count());
+
+        //start = std::chrono::system_clock::now();
+        //if (draw_boundaries())
+        //{
+        //  //! \todo Draw non-existing tiles aswell?
+        //  painter.setBrush (QColor (255, 255, 255, 30));
+        //  for (size_t i (0); i < 64; ++i)
+        //  {
+        //    for (size_t j (0); j < 64; ++j)
+        //    {
+        //      TileIndex const tile (i, j);
+        //      bool changed = false;
+        //
+        //      if (world()->mapIndex.hasTile (tile))
+        //      {
+        //        if (world()->mapIndex.tileLoaded (tile))
+        //        {
+        //          if (world()->mapIndex.has_unsaved_changes(tile))
+        //          {
+        //            changed = true;
+        //          }
+        //
+        //          painter.setPen(QColor::fromRgbF(0.f, 0.f, 0.f, 0.6f));
+        //        }
+        //        else if (world()->mapIndex.isTileExternal(tile))
+        //        {
+        //          painter.setPen(QColor::fromRgbF(1.0f, 0.7f, 0.5f, 0.6f));
+        //        }
+        //        else
+        //        {
+        //          painter.setPen (QColor::fromRgbF (0.8f, 0.8f, 0.8f, 0.4f));
+        //        }
+        //      }
+        //      else
+        //      {
+        //        painter.setPen (QColor::fromRgbF (1.0f, 1.0f, 1.0f, 0.05f));
+        //      }
+        //
+        //      // TODO: Take a look at Context2d
+        //      painter.drawRect ( QRect ( tile_size * i
+        //                               , tile_size * j
+        //                               , tile_size
+        //                               , tile_size
+        //                               )
+        //                       );
+        //
+        //      if (changed)
+        //      {
+        //        painter.setPen(QColor::fromRgbF(1.0f, 1.0f, 0.0f, 1.f));
+        //        painter.drawRect ( QRect ( tile_size * i + 1
+        //                                 , tile_size * j + 1
+        //                                 , tile_size - 2
+        //                                 , tile_size - 2
+        //                                 )
+        //                         );
+        //      }
+        //      
+        //      if (_use_selection && _selected_tiles->at(64 * i + j))
+        //      {
+        //        painter.setPen(QColor::fromRgbF(1.0f, 0.0f, 0.0f, 1.f));
+        //        painter.drawRect ( QRect ( tile_size * i + 1
+        //            , tile_size * j + 1
+        //            , tile_size - 2
+        //            , tile_size - 2
+        //            )
+        //        );
+        //      }
+        //    }
+        //  }
+        //}
+        //end = std::chrono::system_clock::now();
+        //printf("Old drawing style: %llims\n", (end - start).count());
 
         if (draw_skies() && _world->renderer()->skies())
         {
@@ -231,13 +308,11 @@ namespace Noggit
                                          , _camera->position.z * scale_factor
                                          )
                                , QPointF ( _camera->position.x * scale_factor
-                                         , _camera->position.z * scale_factor
-                                         )
-                               + QPointF ( glm::cos(math::radians(_camera->yaw())._) * scale_factor
-                                         , -glm::sin(math::radians(_camera->yaw())._) * scale_factor
+                                         , _camera->position.z * scale_factor + 1
                                          )
                                );
           camera_vector.setLength (15.0);
+          camera_vector.setAngle(_camera->yaw()._ - 90);
 
           painter.drawLine (camera_vector);
         }
@@ -284,7 +359,7 @@ namespace Noggit
 
       event->accept();
 
-      emit map_clicked(::glm::vec3 ( tile.x() * TILESIZE + TILESIZE / 2
+      emit map_clicked(glm::vec3 ( tile.x() * TILESIZE + TILESIZE / 2
                                          , 0.0f, tile.y() * TILESIZE + TILESIZE / 2));
     }
 

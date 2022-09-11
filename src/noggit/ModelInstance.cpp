@@ -124,14 +124,14 @@ bool ModelInstance::isInRenderDist(const float& cull_distance, const glm::vec3& 
 {
   float dist;
 
-  if (display == display_mode::in_3D)
-  {
-    dist = glm::distance(camera, pos) - model->rad * scale;
-  }
-  else
-  {
+  //if (display == display_mode::in_3D)
+  //{
+  //  dist = glm::distance(camera, pos) - model->rad * scale;
+  //}
+  //else
+  //{
     dist = std::abs(pos.y - camera.y) - model->rad * scale;
-  }
+  //}
 
   if (dist >= cull_distance)
   {
@@ -179,20 +179,12 @@ void ModelInstance::recalcExtents()
   //! \todo If both boxes are {inf, -inf}, or well, if any min.c > max.c,
   //! the model is bad itself. We *could* detect that case and explicitly
   //! assume {-1, 1} then, to be nice to fuckported models.
-
-  auto corners_in_world = std::vector<glm::vec3>();
-  auto transform = misc::transform_model_box_coords;
-  auto points = relative_to_model.all_corners();
-  for (auto& point : points)
-  {
-    point = transform(point);
-    corners_in_world.push_back(point);
-  }
  
-  auto rotated_corners_in_world = std::vector<glm::vec3>();
+  auto rotated_corners_in_world = std::vector<glm::vec3>(8, glm::vec3(NAN, NAN, NAN));
   auto transposedMat = _transform_mat;
-  for (auto const& point : corners_in_world)
+  for (auto& point : relative_to_model.all_corners())
   {
+    point = misc::transform_model_box_coords(point);
     rotated_corners_in_world.emplace_back(transposedMat * glm::vec4(point, 1.f));
   }
 
@@ -272,7 +264,7 @@ wmo_doodad_instance::wmo_doodad_instance(BlizzardArchive::Listfile::FileKey cons
   pos = glm::vec3(ff[0], ff[2], -ff[1]);
 
   f->read(ff, 16);
-  doodad_orientation = glm::quat (-ff[0], -ff[2], ff[1], ff[3]);
+  doodad_orientation = glm::quat (ff[3], ff[0], ff[2], -ff[1]);
 
   f->read(&scale, 4);
 
@@ -298,18 +290,16 @@ void wmo_doodad_instance::update_transform_matrix_wmo(WMOInstance* wmo)
   }  
 
   world_pos = wmo->transformMatrix() * glm::vec4(pos,0);
-
+  // TODO: This isn't right, but close enough.
   auto m2_mat = glm::mat4x4(1);
   m2_mat = glm::translate(m2_mat, pos);
   m2_mat = m2_mat * glm::toMat4(doodad_orientation);
+  //m2_mat = glm::rotate(m2_mat, glm::radians(-180.0f), glm::vec3(0, 0, 1));
+  //m2_mat = glm::rotate(m2_mat, glm::radians(180.0f), glm::vec3(0, 1, 0));
   m2_mat = glm::scale(m2_mat, glm::vec3(scale));
 
-  glm::mat4x4 mat
-  (
-    wmo->transformMatrix() * m2_mat
-  );
-
-  _transform_mat_inverted = glm::inverse(mat);
+  _transform_mat = wmo->transformMatrix() * m2_mat;
+  _transform_mat_inverted = glm::inverse(_transform_mat);
 
   // to compute the size category (used in culling)
   recalcExtents();

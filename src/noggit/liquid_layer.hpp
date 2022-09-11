@@ -5,8 +5,11 @@
 #include <math/trig.hpp>
 #include <noggit/MapHeaders.h>
 #include <opengl/scoped.hpp>
-#include <array>
+
 #include <glm/vec2.hpp>
+
+#include <array>
+#include <map>
 
 class MapChunk;
 class sExtendableArray;

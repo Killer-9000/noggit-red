@@ -1,5 +1,5 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 410 core
+#version 450 core
 
 layout (std140) uniform lighting
 {
@@ -28,64 +28,7 @@ out vec4 out_color;
 
 vec4 get_tex_color(vec2 tex_coord, uint tex_sampler, int array_index)
 {
-  if (tex_sampler == 0)
-  {
-    return texture(texture_samplers[0], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 1)
-  {
-    return texture(texture_samplers[1], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 2)
-  {
-    return texture(texture_samplers[2], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 3)
-  {
-    return texture(texture_samplers[3], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 4)
-  {
-    return texture(texture_samplers[4], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 5)
-  {
-    return texture(texture_samplers[5], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 6)
-  {
-    return texture(texture_samplers[6], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 7)
-  {
-    return texture(texture_samplers[7], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 8)
-  {
-    return texture(texture_samplers[8], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 9)
-  {
-    return texture(texture_samplers[9], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 10)
-  {
-    return texture(texture_samplers[10], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 11)
-  {
-    return texture(texture_samplers[11], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 12)
-  {
-    return texture(texture_samplers[12], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 13)
-  {
-    return texture(texture_samplers[13], vec3(tex_coord, array_index)).rgba;
-  }
-
-  return vec4(0);
+  return tex_sampler < 14 ? texture(texture_samplers[tex_sampler], vec3(tex_coord, array_index)).rgba : vec4(0);
 }
 
 vec2 rot2(vec2 p, float degree)

@@ -129,7 +129,7 @@ struct RibbonSegment
 {
   glm::vec3 pos, up, back;
   float len, len0;
-  RibbonSegment (::glm::vec3 pos_, float len_)
+  RibbonSegment (glm::vec3 pos_, float len_)
     : pos (pos_)
     , len (len_)
   {}

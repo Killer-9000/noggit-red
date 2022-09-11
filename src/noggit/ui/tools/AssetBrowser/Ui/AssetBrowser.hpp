@@ -6,11 +6,14 @@
 #include <noggit/ui/tools/AssetBrowser/Ui/Model/TreeManager.hpp>
 #include <noggit/ui/tools/PreviewRenderer/PreviewRenderer.hpp>
 
-#include <QWidget>
-#include <QStandardItemModel>
-#include <QSortFilterProxyModel>
-#include <QRegularExpression>
+#include <QDir>
 #include <QMainWindow>
+#include <QRegularExpression>
+#include <QSortFilterProxyModel>
+#include <QStandardItemModel>
+#include <QWidget>
+
+#include <regex>
 
 class MapView;
 
@@ -18,7 +21,7 @@ namespace Noggit
 {
   namespace Ui::Tools::AssetBrowser::Ui
   {
-    class AssetBrowserWidget : public QMainWindow
+    class AssetBrowserWidget : public QWidget
     {
       Q_OBJECT
     public:
@@ -35,12 +38,12 @@ namespace Noggit
       QStandardItemModel* _model;
       QSortFilterProxyModel* _sort_model;
       PreviewRenderer* _preview_renderer;
-      QRegularExpression _wmo_group_and_lod_regex;
+      std::regex _wmo_group_and_lod_regex;
       MapView* _map_view;
       std::string _selected_path;
 
-      void updateModelData();
-      void recurseDirectory(Model::TreeManager& tree_mgr, const QString& s_dir, const QString& project_dir);
+      tsl::robin_map<std::string, QStandardItem*> _itemTreeMap;
+      void LoadDirectory(const std::string& directory);
 
     protected:
       void keyPressEvent(QKeyEvent* event) override;

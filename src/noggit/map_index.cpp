@@ -1,19 +1,16 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
+#include <noggit/Action.hpp>
+#include <noggit/ActionManager.hpp>
+#include <noggit/application/NoggitApplication.hpp>
 #include <noggit/AsyncLoader.h>
+#include <noggit/map_index.hpp>
 #include <noggit/MapChunk.h>
 #include <noggit/MapTile.h>
 #include <noggit/Misc.h>
-#include <noggit/World.h>
-#include <noggit/ActionManager.hpp>
-#include <noggit/Action.hpp>
 #include <noggit/project/CurrentProject.hpp>
-#ifdef USE_MYSQL_UID_STORAGE
-  #include <mysql/mysql.h>
-#endif
-#include <noggit/map_index.hpp>
 #include <noggit/uid_storage.hpp>
-#include <noggit/application/NoggitApplication.hpp>
+#include <noggit/World.h>
 #include <ClientFile.hpp>
 
 #include <QtCore/QSettings>
@@ -22,8 +19,13 @@
 #include <QRegExp>
 #include <QFile>
 
-#include <forward_list>
+#ifdef USE_MYSQL_UID_STORAGE
+#include <mysql/mysql.h>
+#endif
+
 #include <cstdlib>
+#include <forward_list>
+#include <omp.h>
 
 MapIndex::MapIndex (const std::string &pBasename, int map_id, World* world,
                     Noggit::NoggitRenderContext context, bool create_empty)
@@ -52,15 +54,16 @@ MapIndex::MapIndex (const std::string &pBasename, int map_id, World* world,
     _sort_models_by_size_class = true;
     changed = false;
 
-    for (int j = 0; j < 64; ++j)
-    {
-      for (int i = 0; i < 64; ++i)
-      {
-        mTiles[j][i].tile = nullptr;
-        mTiles[j][i].onDisc = false;
-        mTiles[j][i].flags = 0;
-      }
-    }
+    memset(&mTiles, 0, 64 * 64 * sizeof(MapTileEntry));
+    //for (int j = 0; j < 64; ++j)
+    //{
+    //  for (int i = 0; i < 64; ++i)
+    //  {
+    //    mTiles[j][i].tile = nullptr;
+    //    mTiles[j][i].onDisc = false;
+    //    mTiles[j][i].flags = 0;
+    //  }
+    //}
 
     return;
   }
@@ -113,6 +116,24 @@ MapIndex::MapIndex (const std::string &pBasename, int map_id, World* world,
   /// this is the theory. Sadly, we are also compiling on 64 bit machines with size_t being 8 byte, not 4. Therefore, we can't do the same thing, Blizzard does in its 32bit executable.
   //theFile.read( &(mTiles[0][0]), sizeof( 8 * 64 * 64 ) );
 
+  std::stringstream path;
+  path << Noggit::Application::NoggitApplication::instance()->clientData()->localPath();
+  path << "/World/Maps/" << basename;
+  std::regex regex(basename + R"(_(\n+)_(\n+)\.adt)");
+
+  bool onDisc[64][64];
+  memset(&onDisc, false, 64 * 64);
+  if (std::filesystem::exists(path.str()))
+  {
+    std::smatch results;
+    for (const auto& entry : std::filesystem::directory_iterator(path.str()))
+    {
+      std::string name = entry.path().filename().string();
+      if (std::regex_search(name, results, regex))
+        onDisc[atoi(results[0].str().c_str())][atoi(results[1].str().c_str())] = true;
+    }
+  }
+
   for (int j = 0; j < 64; ++j)
   {
     for (int i = 0; i < 64; ++i)
@@ -120,11 +141,11 @@ MapIndex::MapIndex (const std::string &pBasename, int map_id, World* world,
       theFile.read(&mTiles[j][i].flags, 4);
       theFile.seekRelative(4);
 
-      std::stringstream adt_filename;
-      adt_filename << "World\\Maps\\" << basename << "\\" << basename << "_" << i << "_" << j << ".adt";
+      // std::stringstream adt_filename;
+      // adt_filename << "World\\Maps\\" << basename << "\\" << basename << "_" << j << "_" << i << ".adt";
 
       mTiles[j][i].tile = nullptr;
-      mTiles[j][i].onDisc = Noggit::Application::NoggitApplication::instance()->clientData()->existsOnDisk(adt_filename.str());
+      mTiles[j][i].onDisc = onDisc[j][i];
 
 			if (mTiles[j][i].onDisc && !(mTiles[j][i].flags & 1))
 			{
@@ -193,42 +214,42 @@ void MapIndex::save()
   int curPos = 0;
 
   // MVER
-  //  {
-  wdtFile.Extend(8 + 0x4);
-  SetChunkHeader(wdtFile, curPos, 'MVER', 4);
+  {
+    wdtFile.Extend(8 + 0x4);
+    SetChunkHeader(wdtFile, curPos, 'MVER', 4);
 
-  // MVER data
-  *(wdtFile.GetPointer<int>(8)) = 18;
+    // MVER data
+    *(wdtFile.GetPointer<int>(8)) = 18;
 
-  curPos += 8 + 0x4;
-  //  }
+    curPos += 8 + 0x4;
+  }
 
   // MPHD
-  //  {
-  wdtFile.Extend(8);
-  SetChunkHeader(wdtFile, curPos, 'MPHD', sizeof(MPHD));
-  curPos += 8;
+  {
+    wdtFile.Extend(8);
+    SetChunkHeader(wdtFile, curPos, 'MPHD', sizeof(MPHD));
+    curPos += 8;
 
-  wdtFile.Insert(curPos, sizeof(MPHD), (char*)&mphd);
-  curPos += sizeof(MPHD);
-  //  }
+    wdtFile.Insert(curPos, sizeof(MPHD), (char*)&mphd);
+    curPos += sizeof(MPHD);
+  }
 
   // MAIN
-  //  {
-  wdtFile.Extend(8);
-  SetChunkHeader(wdtFile, curPos, 'MAIN', 64 * 64 * 8);
-  curPos += 8;
-
-  for (int j = 0; j < 64; ++j)
   {
-    for (int i = 0; i < 64; ++i)
+    wdtFile.Extend(8);
+    SetChunkHeader(wdtFile, curPos, 'MAIN', 64 * 64 * 8);
+    curPos += 8;
+
+    for (int j = 0; j < 64; ++j)
     {
-      wdtFile.Insert(curPos, 4, (char*)&mTiles[j][i].flags);
-      wdtFile.Extend(4);
-      curPos += 8;
+      for (int i = 0; i < 64; ++i)
+      {
+        wdtFile.Insert(curPos, 4, (char*)&mTiles[j][i].flags);
+        wdtFile.Extend(4);
+        curPos += 8;
+      }
     }
   }
-  //  }
 
   if (mHasAGlobalWMO)
   {
@@ -274,9 +295,9 @@ void MapIndex::enterTile(const TileIndex& tile)
   int cx = tile.x;
   int cz = tile.z;
 
-  for (int pz = std::max(cz - 1, 0); pz < std::min(cz + 2, 63); ++pz)
+  for (int pz = std::max(cz - _unload_dist, 0); pz < std::min(cz + _unload_dist + 1, 63); ++pz)
   {
-    for (int px = std::max(cx - 1, 0); px < std::min(cx + 2, 63); ++px)
+    for (int px = std::max(cx - _unload_dist, 0); px < std::min(cx + _unload_dist + 1, 63); ++px)
     {
       loadTile(TileIndex(px, pz));
     }
@@ -396,7 +417,7 @@ void MapIndex::unloadTiles(const TileIndex& tile)
   {
     for (MapTile* adt : loaded_tiles())
     {
-      if (tile.dist(adt->index) > _unload_dist)
+      if (tile.dist(adt->index) > _unload_dist + 2)
       {
         //Only unload adts not marked to save
         if (!adt->changed.load())
@@ -993,19 +1014,16 @@ uid_fix_status MapIndex::fixUIDs (World* world, bool cancel_on_model_loading_err
 
 void MapIndex::searchMaxUID()
 {
-  for (int z = 0; z < 64; ++z)
+  for (int z = 0; z < 64 * 64; ++z)
   {
-    for (int x = 0; x < 64; ++x)
+    if (!(mTiles[z / 64][z % 64].flags & 1))
     {
-      if (!(mTiles[z][x].flags & 1))
-      {
-        continue;
-      }
-
-      std::stringstream filename;
-      filename << "World\\Maps\\" << basename << "\\" << basename << "_" << x << "_" << z << ".adt";
-      highestGUID = std::max(highestGUID, getHighestGUIDFromFile(filename.str()));
+      continue;
     }
+
+    std::stringstream filename;
+    filename << "World\\Maps\\" << basename << "\\" << basename << "_" << z % 64 << "_" << z / 64 << ".adt";
+    highestGUID = std::max(highestGUID, getHighestGUIDFromFile(filename.str()));
   }
 
   saveMaxUID();
@@ -1072,9 +1090,7 @@ void MapIndex::loadMinimapMD5translate()
     QString line = md5trs_stream.readLine();
 
     if (!line.length())
-    {
       continue;
-    }
 
     if (line.startsWith("dir: ", Qt::CaseInsensitive))
     {
@@ -1083,15 +1099,12 @@ void MapIndex::loadMinimapMD5translate()
       continue;
     }
 
-    QStringList line_split = line.split(QRegExp("[\t]"));
+    static const QRegExp regex = QRegExp("[\t]");
+    QStringList line_split = line.split(regex);
 
     if (cur_dir.length())
-    {
       _minimap_md5translate[cur_dir.toStdString()][line_split[0].toStdString()] = line_split[1].toStdString();
-    }
-
   }
-
 }
 
 void MapIndex::saveMinimapMD5translate()
@@ -1114,21 +1127,13 @@ void MapIndex::saveMinimapMD5translate()
       out << "dir: " << it->first.c_str() << "\n"; // save dir
 
       for (auto it_ = it->second.begin(); it_ != it->second.end(); ++it_)
-      {
         out << it_->first.c_str() << "\t" << it_->second.c_str() << "\n";
-      }
     }
 
     file.close();
   }
   else
-  {
     LogError << "Failed saving md5translate.trs. File can't be opened." << std::endl;
-  }
-
-
-
-
 }
 
 void MapIndex::addTile(const TileIndex& tile)

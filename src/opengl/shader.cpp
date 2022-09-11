@@ -1,10 +1,10 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 #include <opengl/scoped.hpp>
 #include <opengl/context.hpp>
-#include <opengl/context.inl>
 #include <opengl/shader.hpp>
 #include <opengl/texture.hpp>
 #include <noggit/Misc.h>
+#include <noggit/Log.h>
 #include <glm/vec3.hpp>
 
 #include <QFile>
@@ -23,7 +23,7 @@ namespace OpenGL
   {
     char const* source_ptr (source.data());
     gl.shaderSource (_handle, 1, &source_ptr, nullptr);
-    gl.compile_shader (_handle);
+    gl.compileShader (_handle);
   }
   catch (...)
   {
@@ -106,9 +106,9 @@ namespace OpenGL
       attachments.emplace_back (*_handle, s._handle);
     }
 
-    gl.link_program (*_handle);
+    gl.linkProgram (*_handle);
 #ifdef  VALIDATE_OPENGL_PROGRAMS
-    gl.validate_program(*_handle);
+    gl.validateProgram(*_handle);
 #endif
   }
   program::program (program&& other)

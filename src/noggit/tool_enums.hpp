@@ -63,19 +63,19 @@ struct flatten_mode
 enum class editing_mode
 {
   ground = 0,
-  flatten_blur = 1,
-  paint = 2,
-  holes = 3,
-  areaid = 4,
-  flags = 5,
-  water = 6,
-  mccv = 7,
-  object = 8,
-  minimap = 9,
-  stamp = 10,
-  light = 11,
-  scripting = 12,
-  chunk = 13
+  flatten_blur,
+  paint,
+  holes,
+  areaid,
+  flags,
+  water,
+  mccv,
+  object,
+  minimap,
+  stamp,
+  //light,
+  scripting,
+  //chunk,
 };
 
 enum water_opacity

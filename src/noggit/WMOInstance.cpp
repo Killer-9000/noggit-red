@@ -123,8 +123,8 @@ void WMOInstance::draw ( OpenGL::Scoped::use_program& wmo_shader
 
   if (force_box || is_selected)
   {
-    //gl.enable(GL_BLEND);
-    //gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // gl.enable(GL_BLEND);
+    // gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glm::vec4 color = force_box ? glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)
         : glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
@@ -277,15 +277,8 @@ void WMOInstance::change_doodadset(uint16_t doodad_set)
 void WMOInstance::update_doodads()
 {
   for (auto& group_doodads : _doodads_per_group)
-  {
     for (auto& doodad : group_doodads.second)
-    {
-      if (!doodad.need_matrix_update())
-        continue;
-
       doodad.update_transform_matrix_wmo(this);
-    }
-  }
 }
 
 std::vector<wmo_doodad_instance*> WMOInstance::get_visible_doodads

@@ -78,7 +78,7 @@ public:
 
   int texture_id(scoped_blp_texture_reference const& texture);
 
-  void uploadAlphamapData();
+  void uploadAlphamapData(GLuint texture);
 
   bool apply_alpha_changes();
 

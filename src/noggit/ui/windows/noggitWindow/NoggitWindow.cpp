@@ -1,4 +1,4 @@
-#include <noggit/ui/windows/about/About.h>
+#include <noggit/application/Utils.hpp>
 #include <noggit/DBC.h>
 #include <noggit/DBCFile.h>
 #include <noggit/Log.h>
@@ -6,7 +6,6 @@
 #include <noggit/ContextObject.hpp>
 #include <noggit/ui/windows/noggitWindow/NoggitWindow.hpp>
 #include <noggit/MapView.h>
-#include <noggit/ui/windows/settingsPanel/SettingsPanel.h>
 #include <noggit/ui/minimap_widget.hpp>
 #include <noggit/ui/UidFixWindow.hpp>
 #include <noggit/uid_storage.hpp>
@@ -14,7 +13,16 @@
 #include <noggit/ui/FontAwesome.hpp>
 #include <noggit/ui/FramelessWindow.hpp>
 #include <noggit/ui/tools/UiCommon/StackedWidget.hpp>
+#include <noggit/ui/tools/ViewportManager/ViewportManager.hpp>
+#include <noggit/ui/windows/about/About.h>
+#include <noggit/ui/windows/noggitWindow/widgets/MapBookmarkListItem.hpp>
+#include <noggit/ui/windows/noggitWindow/widgets/MapListItem.hpp>
+#include <noggit/ui/windows/noggitWindow/components/BuildMapListComponent.hpp>
+#include <noggit/ui/windows/settingsPanel/SettingsPanel.h>
+
 #include <BlizzardDatabase.h>
+#include <external/framelesshelper/framelesswindowsmanager.h>
+
 #include <QtGui/QCloseEvent>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QListWidget>
@@ -25,16 +33,13 @@
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QStackedWidget>
-#include <noggit/ui/windows/noggitWindow/widgets/MapListItem.hpp>
-#include <noggit/ui/windows/noggitWindow/widgets/MapBookmarkListItem.hpp>
 #include <QtNetwork/QTcpSocket>
-#include <sstream>
 #include <QSysInfo>
 #include <QStandardPaths>
 #include <QDir>
 #include <QIcon>
-#include <noggit/ui/windows/noggitWindow/components/BuildMapListComponent.hpp>
-#include <noggit/application/Utils.hpp>
+
+#include <sstream>
 
 #ifdef USE_MYSQL_UID_STORAGE
 #include <mysql/mysql.h>
@@ -45,8 +50,6 @@
 #include "revision.h"
 
 #include "ui_TitleBar.h"
-#include <external/framelesshelper/framelesswindowsmanager.h>
-#include <noggit/ui/tools/ViewportManager/ViewportManager.hpp>
 
 namespace Noggit::Ui::Windows
 {
@@ -63,7 +66,7 @@ namespace Noggit::Ui::Windows
     setWindowTitle(QString::fromStdString(title.str()));
     setWindowIcon(QIcon(":/icon"));
 
-    if (project->projectVersion == Project::ProjectVersion::WOTLK)
+    if (project->projectVersion == BlizzardArchive::ClientVersion::WOTLK)
     {
       OpenDBs(project->ClientData);
     }
@@ -183,7 +186,8 @@ namespace Noggit::Ui::Windows
   {
     _minimap->world(nullptr);
 
-    _world.reset();
+    if (_world)
+      _world.reset();
 
     auto table = _project->ClientDatabase->LoadTable("Map", readFileAsIMemStream);
     auto record = table.Record(map_id);
@@ -193,7 +197,7 @@ namespace Noggit::Ui::Windows
 
     _project->ClientDatabase->UnloadTable("Map");
 
-    emit mapSelected(map_id);
+    emit mapSelected(_world.get(), map_id);
 
   }
 
@@ -207,7 +211,7 @@ namespace Noggit::Ui::Windows
     auto widget(new QWidget(_stack_widget));
     _stack_widget->addWidget(widget);
 
-    auto layout(new QHBoxLayout(widget));
+    auto layout(new QGridLayout(widget));
     layout->setAlignment(Qt::AlignLeft);
     QListWidget* bookmarks_table(new QListWidget(widget));
     _continents_table = new QListWidget(widget);
@@ -217,17 +221,34 @@ namespace Noggit::Ui::Windows
                      }
     );
 
+    auto mapSearchBar(new QLineEdit(_continents_table));
+    mapSearchBar->setFixedWidth(300);
+    QObject::connect(mapSearchBar, &QLineEdit::textChanged, [this](const QString& text)
+      {
+        auto& map_table = _project->ClientDatabase->GetTable("Map", readFileAsIMemStream);
+        int itemCount = _continents_table->count();
+        for (int i = 0; i < itemCount; i++)
+        {
+          QListWidgetItem* item = _continents_table->item(i);
+          auto record = map_table->Record(item->data(Qt::UserRole).toInt());
+          bool notHidden = QString(record.Columns.at("MapName_lang").Value.c_str()).contains(text, Qt::CaseInsensitive);
+          notHidden |= QString(record.Columns.at("Directory").Value.c_str()).contains(text, Qt::CaseInsensitive);
+          item->setHidden(!notHidden);
+        }
+      }
+    );
+    layout->addWidget(mapSearchBar, 1, 0, 1, 1);
 
     QTabWidget* entry_points_tabs(new QTabWidget(widget));
     entry_points_tabs->addTab(_continents_table, "Maps");
     entry_points_tabs->addTab(bookmarks_table, "Bookmarks");
     entry_points_tabs->setFixedWidth(300);
-    layout->addWidget(entry_points_tabs);
+    layout->addWidget(entry_points_tabs, 0, 0, 1, 1);
 
     _buildMapListComponent->buildMapList(this);
 
     qulonglong bookmark_index(0);
-    for (auto entry: _project->Bookmarks)
+    for (auto& entry : _project->Bookmarks)
     {
       auto item = new QListWidgetItem(bookmarks_table);
 
@@ -269,7 +290,7 @@ namespace Noggit::Ui::Windows
     _minimap->draw_boundaries(true);
     //_minimap->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
 
-    QObject::connect(_minimap, &minimap_widget::map_clicked, [this](::glm::vec3 const& pos)
+    QObject::connect(_minimap, &minimap_widget::map_clicked, [this](glm::vec3 const& pos)
                      {
                        check_uid_then_enter_map(pos, math::degrees(30.f), math::degrees(90.f));
                      }
@@ -295,8 +316,8 @@ namespace Noggit::Ui::Windows
     );
 
     right_side->addTab(_map_creation_wizard, "Edit map");
-
-    layout->addWidget(right_side);
+    
+    layout->addWidget(right_side, 0, 1, 2, 2);
 
     //setCentralWidget (_stack_widget);
 

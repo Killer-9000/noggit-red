@@ -1,73 +1,117 @@
 //Folder to contain all of the project related files
 #pragma once
 
-#include <map>
-#include <memory>
-#include <blizzard-archive-library/include/CASCArchive.hpp>
-#include <blizzard-archive-library/include/ClientFile.hpp>
+#include <noggit/application/Configuration/NoggitApplicationConfiguration.hpp>
+#include <noggit/project/ApplicationProjectReader.h>
+#include <noggit/project/ApplicationProjectWriter.h>
+
+#include <blizzard-archive-library/include/ClientData.hpp>
 #include <blizzard-archive-library/include/Exception.hpp>
 #include <blizzard-database-library/include/BlizzardDatabase.h>
-#include <noggit/application/Configuration/NoggitApplicationConfiguration.hpp>
-#include <noggit/ui/windows/downloadFileDialog/DownloadFileDialog.h>
-#include <QJsonDocument>
+
 #include <QMessageBox>
-#include <QJsonObject>
-#include <QFile>
-#include <filesystem>
-#include <fstream>
-#include <vector>
-#include <QtNetwork/QNetworkAccessManager>
-#include <QtNetwork/QNetworkReply>
-#include <QtNetwork/QNetworkRequest>
-#include <QFile>
-#include <QString>
-#include <QObject>
-#include <QString>
-#include <thread>
-#include <chrono>
-#include <cassert>
+#include <QIcon>
+
 #include <glm/vec3.hpp>
 
-#include "ApplicationProjectReader.h"
-#include "ApplicationProjectWriter.h"
+#include <cassert>
+#include <filesystem>
+#include <memory>
+#include <vector>
 
 namespace Noggit::Project
 {
-  enum class ProjectVersion
-  {
-    VANILLA,
-    BC,
-    WOTLK,
-    CATA,
-    PANDARIA,
-    WOD,
-    LEGION,
-    BFA,
-    SL
-  };
-
+#pragma warning( push )
+#pragma warning( disable : 4715)
   struct ClientVersionFactory
   {
-    static ProjectVersion mapToEnumVersion(std::string const& projectVersion)
+    static BlizzardArchive::ClientVersion mapToEnumVersion(std::string const& projectVersion)
     {
-      if (projectVersion == "Wrath Of The Lich King")
-        return ProjectVersion::WOTLK;
-      if (projectVersion == "Shadowlands")
-        return ProjectVersion::SL;
+      if (projectVersion == std::string("Vanilla"))
+        return BlizzardArchive::ClientVersion::VANILLA;
+      else if (projectVersion == std::string("The Burning Crusade"))
+        return BlizzardArchive::ClientVersion::TBC;
+      else if (projectVersion == std::string("Wrath Of The Lich King"))
+        return BlizzardArchive::ClientVersion::WOTLK;
+      else if (projectVersion == std::string("Cataclysm"))
+        return BlizzardArchive::ClientVersion::CATA;
+      else if (projectVersion == std::string("Mists Of Pandaria"))
+        return BlizzardArchive::ClientVersion::MOP;
+      else if (projectVersion == std::string("Warlords Of Draenor"))
+        return BlizzardArchive::ClientVersion::WOD;
+      else if (projectVersion == std::string("Legion"))
+        return BlizzardArchive::ClientVersion::LEGION;
+      else if (projectVersion == std::string("Battle For Azeroth"))
+        return BlizzardArchive::ClientVersion::BFA;
+      else if (projectVersion == std::string("Shadowlands"))
+        return BlizzardArchive::ClientVersion::SHADOWLANDS;
+      else if (projectVersion == std::string("Dragonflight"))
+        return BlizzardArchive::ClientVersion::DRAGONFLIGHT;
 
       assert(false);
     }
 
-    static std::string MapToStringVersion(ProjectVersion const& projectVersion)
+    static std::string MapToStringVersion(BlizzardArchive::ClientVersion const& projectVersion)
     {
-      if (projectVersion == ProjectVersion::WOTLK)
+      if (projectVersion == BlizzardArchive::ClientVersion::VANILLA)
+        return std::string("Vanilla");
+      else if (projectVersion == BlizzardArchive::ClientVersion::TBC)
+        return std::string("The Burning Crusade");
+      else if (projectVersion == BlizzardArchive::ClientVersion::WOTLK)
         return std::string("Wrath Of The Lich King");
-      if (projectVersion == ProjectVersion::SL)
+      else if (projectVersion == BlizzardArchive::ClientVersion::CATA)
+        return std::string("Cataclysm");
+      else if (projectVersion == BlizzardArchive::ClientVersion::MOP)
+        return std::string("Mists Of Pandaria");
+      else if (projectVersion == BlizzardArchive::ClientVersion::WOD)
+        return std::string("Warlords Of Draenor");
+      else if (projectVersion == BlizzardArchive::ClientVersion::LEGION)
+        return std::string("Legion");
+      else if (projectVersion == BlizzardArchive::ClientVersion::BFA)
+        return std::string("Battle For Azeroth");
+      else if (projectVersion == BlizzardArchive::ClientVersion::SHADOWLANDS)
         return std::string("Shadowlands");
+      else if (projectVersion == BlizzardArchive::ClientVersion::DRAGONFLIGHT)
+        return std::string("Dragonflight");
 
       assert(false);
+    }
+
+    static QIcon GetIcon(std::string const& projectVersion)
+    {
+      return GetIcon(mapToEnumVersion(projectVersion));
+    }
+
+    static QIcon GetIcon(BlizzardArchive::ClientVersion const& projectVersion)
+    {
+      switch (projectVersion)
+      {
+      case BlizzardArchive::ClientVersion::VANILLA:
+        return QIcon(":/icon-classic");
+      case BlizzardArchive::ClientVersion::TBC:
+        return QIcon(":/icon-burning");
+      case BlizzardArchive::ClientVersion::WOTLK:
+        return QIcon(":/icon-wrath");
+      case BlizzardArchive::ClientVersion::CATA:
+        return QIcon(":/icon-cata");
+      case BlizzardArchive::ClientVersion::MOP:
+        return QIcon(":/icon-panda");
+      case BlizzardArchive::ClientVersion::WOD:
+        return QIcon(":/icon-warlords");
+      case BlizzardArchive::ClientVersion::LEGION:
+        return QIcon(":/icon-legion");
+      case BlizzardArchive::ClientVersion::BFA:
+        return QIcon(":/icon-battle");
+      case BlizzardArchive::ClientVersion::SHADOWLANDS:
+        return QIcon(":/icon-shadow");
+        //case BlizzardArchive::ClientVersion::DRAGONFLIGHT:
+        //  return QIcon(":/icon-dragon");
+      default:
+        return QIcon(":/icon-classic");
+      }
     }
   };
+#pragma warning( pop )
 
   struct NoggitProjectBookmarkMap
   {
@@ -91,7 +135,7 @@ namespace Noggit::Project
     std::string ProjectPath;
     std::string ProjectName;
     std::string ClientPath;
-    ProjectVersion projectVersion;
+    BlizzardArchive::ClientVersion projectVersion;
     std::vector<NoggitProjectPinnedMap> PinnedMaps;
     std::vector<NoggitProjectBookmarkMap> Bookmarks;
     std::shared_ptr<BlizzardDatabaseLib::BlizzardDatabase> ClientDatabase;
@@ -111,10 +155,7 @@ namespace Noggit::Project
       _projectWriter->saveProject(this, std::filesystem::path(ProjectPath));
     }
 
-    void deleteBookmark()
-    {
-
-    }
+    void deleteBookmark() { }
 
     void pinMap(int map_id, const std::string& map_name)
     {
@@ -174,8 +215,6 @@ namespace Noggit::Project
 
       auto project_writer = ApplicationProjectWriter();
       project_writer.saveProject(&project, project_path);
-
-
     }
 
     std::shared_ptr<NoggitProject> loadProject(std::filesystem::path const& project_path)
@@ -189,20 +228,51 @@ namespace Noggit::Project
       std::string dbd_file_directory = _configuration->ApplicationDatabaseDefinitionsPath;
 
       BlizzardDatabaseLib::Structures::Build client_build("3.3.5.12340");
-      auto client_archive_version = BlizzardArchive::ClientVersion::WOTLK;
       auto client_archive_locale = BlizzardArchive::Locale::AUTO;
-      if (project->projectVersion == ProjectVersion::SL)
+      if (project->projectVersion == BlizzardArchive::ClientVersion::SHADOWLANDS)
       {
-        client_archive_version = BlizzardArchive::ClientVersion::SL;
-        client_build = BlizzardDatabaseLib::Structures::Build("9.1.0.39584");
+        client_build = BlizzardDatabaseLib::Structures::Build("9.2.7.45161");
         client_archive_locale = BlizzardArchive::Locale::enUS;
       }
-
-      if (project->projectVersion == ProjectVersion::WOTLK)
+      else if (project->projectVersion == BlizzardArchive::ClientVersion::LEGION)
       {
-        client_archive_version = BlizzardArchive::ClientVersion::WOTLK;
+        client_build = BlizzardDatabaseLib::Structures::Build("7.3.5.26365");
+        client_archive_locale = BlizzardArchive::Locale::enUS;
+      }
+      else if (project->projectVersion == BlizzardArchive::ClientVersion::WOD)
+      {
+        client_build = BlizzardDatabaseLib::Structures::Build("6.2.3.20779");
+        client_archive_locale = BlizzardArchive::Locale::enUS;
+      }
+      else if (project->projectVersion == BlizzardArchive::ClientVersion::MOP)
+      {
+        client_build = BlizzardDatabaseLib::Structures::Build("5.4.8.18414");
+        client_archive_locale = BlizzardArchive::Locale::AUTO;
+      }
+      else if (project->projectVersion == BlizzardArchive::ClientVersion::CATA)
+      {
+        client_build = BlizzardDatabaseLib::Structures::Build("4.3.4.15595");
+        client_archive_locale = BlizzardArchive::Locale::AUTO;
+      }
+      else if (project->projectVersion == BlizzardArchive::ClientVersion::WOTLK)
+      {
         client_build = BlizzardDatabaseLib::Structures::Build("3.3.5.12340");
         client_archive_locale = BlizzardArchive::Locale::AUTO;
+      }
+      else if (project->projectVersion == BlizzardArchive::ClientVersion::TBC)
+      {
+        client_build = BlizzardDatabaseLib::Structures::Build("2.4.3.8606");
+        client_archive_locale = BlizzardArchive::Locale::AUTO;
+      }
+      else if (project->projectVersion == BlizzardArchive::ClientVersion::VANILLA)
+      {
+        client_build = BlizzardDatabaseLib::Structures::Build("1.12.1.5875");
+        client_archive_locale = BlizzardArchive::Locale::AUTO;
+      }
+      else
+      {
+        QMessageBox::warning(nullptr, "Error", "The client does not match a supported version.");
+        return {};
       }
 
       project->ClientDatabase = std::make_shared<BlizzardDatabaseLib::BlizzardDatabase>(dbd_file_directory, client_build);
@@ -210,9 +280,9 @@ namespace Noggit::Project
       try
       {
         project->ClientData = std::make_shared<BlizzardArchive::ClientData>(
-            project->ClientPath, client_archive_version, client_archive_locale, project_path.generic_string());
+            project->ClientPath, project->projectVersion, client_archive_locale, project_path.generic_string());
       }
-      catch (BlizzardArchive::Exceptions::Locale::LocaleNotFoundError& e)
+      catch (BlizzardArchive::Exceptions::Locale::LocaleNotFoundError&)
       {
         QMessageBox::critical(nullptr, "Error", "The client does not appear to be valid.");
         return {};

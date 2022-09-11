@@ -94,14 +94,7 @@ public:
   [[nodiscard]]
   std::vector<MapChunk*> chunks_in_rect (glm::vec3 const& pos, float radius) const;
 
-  const TileIndex index;
-  float xbase, zbase;
-
-  std::atomic<bool> changed;
-
-
   bool intersect (math::ray const&, selection_result*) const;
-
 
   bool GetVertex(float x, float z, glm::vec3 *V);
   void getVertexInternal(float x, float z, glm::vec3* v);
@@ -125,8 +118,6 @@ public:
   void remove_model(SceneObject* instance);
   void add_model(uint32_t uid);
   void add_model(SceneObject* instance);
-
-  TileWater Water;
 
   bool tile_is_being_reloaded() const { return _tile_is_being_reloaded; }
 
@@ -167,6 +158,11 @@ public:
   Noggit::Rendering::TileRender* renderer() { return &_renderer; };
   Noggit::Rendering::FlightBoundsRender* flightBoundsRenderer() { return &_fl_bounds_render; };
 
+  const TileIndex index;
+  float xbase, zbase;
+  std::atomic<bool> changed;
+  TileWater Water;
+
 private:
 
   tile_mode _mode;
@@ -201,7 +197,7 @@ private:
   std::vector<uint32_t> uids;
   tsl::robin_map<AsyncObject*, std::vector<SceneObject*>> object_instances; // only includes M2 and WMO. perhaps a medium common ancestor then?
 
-  std::unique_ptr<MapChunk> mChunks[16][16];
+  MapChunk* mChunks[16][16] = {};
   std::array<float, 145 * 256 * 4> _chunk_heightmap_buffer;
 
   bool _load_models;

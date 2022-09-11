@@ -108,7 +108,7 @@ void LiquidRender::updateLayerData(LiquidTextureManager* tex_manager)
           {
             auto& render_layer = _render_layers.emplace_back();
 
-            gl.genTextures(1, &render_layer.vertex_data_tex);
+            gl.createTexturesEXT(GL_TEXTURE_2D_ARRAY, 1, &render_layer.vertex_data_tex);
             gl.bindTexture(GL_TEXTURE_2D_ARRAY, render_layer.vertex_data_tex);
             gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA32F, 9, 9, 256, 0, GL_RGBA, GL_FLOAT, nullptr);
             gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -197,11 +197,8 @@ void LiquidRender::updateLayerData(LiquidTextureManager* tex_manager)
         auto& layer_params = _render_layers[layer_counter];
         layer_params.n_used_chunks = n_chunks;
 
-        gl.bindTexture(GL_TEXTURE_2D_ARRAY, layer_params.vertex_data_tex);
-        gl.bindBuffer(GL_UNIFORM_BUFFER, layer_params.chunk_data_buf);
-
-        gl.bufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(OpenGL::LiquidChunkInstanceDataUniformBlock) * 256, layer_params.chunk_data.data());
-        gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 9, 9, 256, GL_RGBA, GL_FLOAT, layer_params.vertex_data.data());
+        gl.namedBufferSubDataEXT(layer_params.chunk_data_buf, 0, sizeof(OpenGL::LiquidChunkInstanceDataUniformBlock) * 256, layer_params.chunk_data.data());
+        gl.namedTextureSubImage3DEXT(layer_params.vertex_data_tex, 0, 0, 0, 0, 9, 9, 256, GL_RGBA, GL_FLOAT, layer_params.vertex_data.data());
       }
 
       layer_counter++;

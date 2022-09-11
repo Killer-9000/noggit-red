@@ -1,14 +1,14 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 #include <noggit/TextureManager.h>
-#include <noggit/Log.h> // LogDebug
 #include <noggit/application/NoggitApplication.hpp>
+#include <noggit/Log.h>
 #include <ClientFile.hpp>
 
 #include <QtCore/QString>
 #include <QtGui/QPixmap>
-
 #include <algorithm>
 #include <glm/vec2.hpp>
+#include <cstdint>
 
 decltype (TextureManager::_) TextureManager::_;
 decltype (TextureManager::_tex_arrays) TextureManager::_tex_arrays;
@@ -39,10 +39,8 @@ void TextureManager::unload_all(Noggit::NoggitRenderContext context)
   // cleanup texture arrays
   auto& arrays_for_context = _tex_arrays[context];
 
-  for (auto& pair : arrays_for_context)
-  {
-    gl.deleteTextures(pair.second.arrays.size(), pair.second.arrays.data());
-  }
+  for (auto& [_, params] : arrays_for_context)
+    gl.deleteTextures(params.arrays.size(), params.arrays.data());
 }
 
 TexArrayParams& TextureManager::get_tex_array(int width, int height, int mip_level,
@@ -51,34 +49,32 @@ TexArrayParams& TextureManager::get_tex_array(int width, int height, int mip_lev
   TexArrayParams& array_params = _tex_arrays[context][std::make_tuple(-1, width, height, mip_level)];
 
   GLint n_layers = N_ARRAY_TEX;
-  //gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &n_layers);
+  // gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &n_layers);
 
   int index_x = array_params.n_used / n_layers;
 
   if (array_params.arrays.size() <= index_x)
   {
     GLuint array;
-
-    gl.genTextures(1, &array);
-    gl.bindTexture(GL_TEXTURE_2D_ARRAY, array);
+    gl.createTexturesEXT(GL_TEXTURE_2D_ARRAY, 1, &array);
 
     array_params.arrays.emplace_back(array);
 
     int width_ = width;
     int height_ = height;
 
-    for (int i = 0; i < mip_level; ++i)
-    {
-      gl.texImage3D(GL_TEXTURE_2D_ARRAY, i, GL_RGBA8, width_, height_, n_layers, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                    nullptr);
+    gl.namedTextureStorage3DEXT(array, mip_level, GL_RGBA8, width_, height_, n_layers);
+    //for (int i = 0; i < mip_level; ++i)
+    //{
+    //  gl.namedTextureSubImage3DEXT(array, i, 0, 0, 0, width_, height_, n_layers, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-      width_ = std::max(width_ >> 1, 1);
-      height_ = std::max(height_ >> 1, 1);
-    }
+    //  width_ = std::max(width_ >> 1, 1);
+    //  height_ = std::max(height_ >> 1, 1);
+    //}
 
-    gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, mip_level - 1);
-    gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    gl.namedTextureParameteriEXT(array, GL_TEXTURE_MAX_LEVEL, mip_level - 1);
+    gl.namedTextureParameteriEXT(array, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    gl.namedTextureParameteriEXT(array, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   }
   else
   {
@@ -95,7 +91,7 @@ TexArrayParams& TextureManager::get_tex_array(GLint compression, int width, int 
   TexArrayParams& array_params = _tex_arrays[context][std::make_tuple(compression, width, height, mip_level)];
 
   GLint n_layers = N_ARRAY_TEX;
-  //gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &n_layers);
+  // gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &n_layers);
 
   int index_x = array_params.n_used / n_layers;
 
@@ -103,25 +99,25 @@ TexArrayParams& TextureManager::get_tex_array(GLint compression, int width, int 
   {
     GLuint array;
 
-    gl.genTextures(1, &array);
-    gl.bindTexture(GL_TEXTURE_2D_ARRAY, array);
+    gl.createTexturesEXT(GL_TEXTURE_2D_ARRAY, 1, &array);
 
     array_params.arrays.emplace_back(array);
 
     int width_ = width;
     int height_ = height;
 
-    for (int i = 0; i < mip_level; ++i)
-    {
-      gl.compressedTexImage3D(GL_TEXTURE_2D_ARRAY, i, compression, width_, height_, n_layers, 0, comp_data[i].size() * n_layers, nullptr);
+    gl.namedTextureStorage3DEXT(array, mip_level, compression, width_, height_, n_layers);
+    //for (int i = 0; i < mip_level; ++i)
+    //{
+    //  gl.namedTextureCompressedSubImage3D(array, i, 0, 0, 0, width_, height_, n_layers, compression, comp_data[i].size() * n_layers, nullptr);
 
-      width_ = std::max(width_ >> 1, 1);
-      height_ = std::max(height_ >> 1, 1);
-    }
+    //  width_ = std::max(width_ >> 1, 1);
+    //  height_ = std::max(height_ >> 1, 1);
+    //}
 
-    gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, mip_level - 1);
-    gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    gl.namedTextureParameteriEXT(array, GL_TEXTURE_MAX_LEVEL, mip_level - 1);
+    gl.namedTextureParameteriEXT(array, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    gl.namedTextureParameteriEXT(array, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   }
   else
   {
@@ -131,8 +127,6 @@ TexArrayParams& TextureManager::get_tex_array(GLint compression, int width, int 
   return array_params;
 }
 
-#include <cstdint>
-//! \todo Cross-platform syntax for packed structs.
 #pragma pack(push,1)
 struct BLPHeader
 {
@@ -164,31 +158,29 @@ void blp_texture::bind()
   gl.bindTexture(GL_TEXTURE_2D_ARRAY, _texture_array);
 }
 
-void blp_texture::uploadToArray(unsigned layer)
+void blp_texture::uploadToArray(GLuint array, unsigned layer)
 {
   finishLoading();
 
   int width = _width, height = _height;
-
+  
   if (!_compression_format)
   {
-
     for (int i = 0; i < _data.size(); ++i)
     {
-      gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, i, 0, 0, layer, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, _data[i].data());
+      gl.namedTextureSubImage3DEXT(array, i, 0, 0, layer, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, _data[i].data());
 
       width = std::max(width >> 1, 1);
       height = std::max(height >> 1, 1);
     }
 
     _data.clear();
-
   }
   else
   {
     for (int i = 0; i < _compressed_data.size(); ++i)
     {
-      gl.compressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, i, 0, 0, layer, width, height, 1, _compression_format.value(), _compressed_data[i].size(), _compressed_data[i].data());
+      gl.namedTextureCompressedSubImage3D(array, i, 0, 0, layer, width, height, 1, _compression_format.value(), _compressed_data[i].size(), _compressed_data[i].data());
 
       width = std::max(width >> 1, 1);
       height = std::max(height >> 1, 1);
@@ -213,7 +205,7 @@ void blp_texture::upload()
   int width = _width, height = _height;
 
   GLint n_layers = N_ARRAY_TEX;
-  //gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &n_layers);
+  // gl.getIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &n_layers);
 
   if (!_compression_format)
   {
@@ -227,7 +219,7 @@ void blp_texture::upload()
 
     for (int i = 0; i < _data.size(); ++i)
     {
-      gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, i, 0, 0, index_y, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, _data[i].data());
+      gl.namedTextureSubImage3DEXT(_texture_array, i, 0, 0, index_y, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, _data[i].data());
 
       width = std::max(width >> 1, 1);
       height = std::max(height >> 1, 1);
@@ -251,7 +243,7 @@ void blp_texture::upload()
 
     for (int i = 0; i < _compressed_data.size(); ++i)
     {
-      gl.compressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, i, 0, 0, index_y, width, height, 1, _compression_format.value(), _compressed_data[i].size(), _compressed_data[i].data());
+      gl.namedTextureCompressedSubImage3D(_texture_array, i, 0, 0, index_y, width, height, 1, _compression_format.value(), _compressed_data[i].size(), _compressed_data[i].data());
 
       width = std::max(width >> 1, 1);
       height = std::max(height >> 1, 1);
@@ -489,14 +481,14 @@ namespace Noggit
     float h = static_cast<float>(height);
     float w = static_cast<float>(width);
 
-    QOpenGLFramebufferObject pixel_buffer(width, height, *_fmt.get());
+    QOpenGLFramebufferObject pixel_buffer(width, height, *_fmt);
     pixel_buffer.bind();
 
     gl.viewport(0, 0, w, h);
     gl.clearColor(.0f, .0f, .0f, 1.f);
     gl.clear(GL_COLOR_BUFFER_BIT);
     
-    OpenGL::Scoped::use_program shader (*_program.get());
+    OpenGL::Scoped::use_program shader (*_program);
 
     shader.uniform("tex", 0);
     shader.uniform("width", w);
@@ -620,6 +612,7 @@ namespace Noggit
 
     OpenGL::Scoped::vao_binder const _ (_vao[0]);
 
+    // TODO: Why do this, its for a simple BLP render, just hardcode it, it'll never change. Plus speed.
     {
       OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> vertices_binder (vertices_vbo);
       shader.attrib("position", 2, GL_FLOAT, GL_FALSE, 0, 0);

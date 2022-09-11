@@ -311,7 +311,7 @@ namespace Noggit
         }
         else
         {
-            return std::nullopt;
+          return std::nullopt;
         }
       }
     }
@@ -336,7 +336,7 @@ namespace Noggit
 
         if (lhs->second.isDuplicateOf(rhs->second))
         {
-          _world->updateTilesWMO(&rhs->second, model_update::remove);
+          _world->updateTilesEntry(&rhs->second, model_update::remove);
 
           _instance_count_per_uid.erase(rhs->second.uid);
           if (NOGGIT_CUR_ACTION)
@@ -359,7 +359,7 @@ namespace Noggit
 
         if (lhs->second.isDuplicateOf(rhs->second))
         {
-          _world->updateTilesModel(&rhs->second, model_update::remove);
+          _world->updateTilesEntry(&rhs->second, model_update::remove);
 
           _instance_count_per_uid.erase(rhs->second.uid);
 
@@ -369,9 +369,7 @@ namespace Noggit
           deleted_uids++;
         }
         else
-        {
           rhs++;
-        }
       }
     }
 
@@ -385,12 +383,9 @@ namespace Noggit
 
     _buffers.upload();
 
-    gl.genTextures(1, &_m2_instances_transform_buf_tex);
-    gl.activeTexture(GL_TEXTURE0);
-    gl.bindTexture(GL_TEXTURE_BUFFER, _m2_instances_transform_buf_tex);
-    gl.bindBuffer(GL_TEXTURE_BUFFER, _m2_instances_transform_buf);
-    gl.bufferData(GL_TEXTURE_BUFFER, _n_allocated_m2_transforms * sizeof(glm::mat4x4), nullptr, GL_DYNAMIC_DRAW);
-    gl.texBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, _m2_instances_transform_buf);
+    gl.createTexturesEXT(GL_TEXTURE_BUFFER, 1, &_m2_instances_transform_buf_tex);
+    gl.namedBufferDataEXT(_m2_instances_transform_buf, _n_allocated_m2_transforms * sizeof(glm::mat4x4), nullptr, GL_DYNAMIC_DRAW);
+    gl.namedTextureBufferEXT(_m2_instances_transform_buf_tex, GL_RGBA32F, _m2_instances_transform_buf);
 
     _transform_storage_uploaded = true;
   }

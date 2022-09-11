@@ -1,12 +1,13 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
-#ifndef NOGGITQT_ACTIONMANAGER_HPP
-#define NOGGITQT_ACTIONMANAGER_HPP
+#pragma once
+
+#include <noggit/Action.hpp>
 
 #include <QObject>
+
 #include <deque>
 #include <stdexcept>
-#include <noggit/Action.hpp>
 
 class MapView;
 
@@ -67,7 +68,7 @@ namespace Noggit
 
         std::deque<Action*> _action_stack;
         unsigned _limit = 30;
-        Action* _cur_action = nullptr;
+        Action* _curAction = nullptr;
         unsigned _undo_index = 0;
 
     };
@@ -76,6 +77,3 @@ namespace Noggit
 
 #define NOGGIT_CUR_ACTION Noggit::ActionManager::instance()->getCurrentAction()
 #define NOGGIT_ACTION_MGR Noggit::ActionManager::instance()
-
-#endif //NOGGITQT_ACTIONMANAGER_HPP
-

@@ -87,41 +87,29 @@ int TextureSet::addTexture (scoped_blp_texture_reference texture)
   return texLevel;
 }
 
-void TextureSet::replace_texture (scoped_blp_texture_reference const& texture_to_replace, scoped_blp_texture_reference replacement_texture)
+void TextureSet::replace_texture(scoped_blp_texture_reference const& texture_to_replace, scoped_blp_texture_reference replacement_texture)
 {
-  int texture_to_replace_level = -1, replacement_texture_level = -1;
+  int replacing_level = -1, replacement_level = -1;
 
+  // Get texture indexes.
   for (size_t i = 0; i < nTextures; ++i)
   {
     if (textures[i] == texture_to_replace)
-    {
-      texture_to_replace_level = i;
-    }
+      replacing_level = i;
     else if (textures[i] == replacement_texture)
-    {
-      replacement_texture_level = i;
-    }
+      replacement_level = i;
   }
 
-  if (texture_to_replace_level != -1)
-  {
-    textures[texture_to_replace_level] = std::move (replacement_texture);
+  // Make sure we has textures, and they are not the same texture.
+  if (replacing_level == -1 || replacement_level == replacing_level)
+    return;
 
-    // prevent texture duplication
-    if (replacement_texture_level != -1 && replacement_texture_level != texture_to_replace_level)
-    {
-        auto sstream = std::stringstream();
-        sstream << "error_" << replacement_texture_level << ".blp";
+  // Replace texture with replacement.
+  textures[replacing_level] = std::move(replacement_texture);
 
-      std::string fallback_tex_name = sstream.str();
-      auto fallback = scoped_blp_texture_reference(fallback_tex_name, _context);
-
-      textures[replacement_texture_level] = std::move(fallback);
-
-      // temp alphamap changes are applied in here
-      // merge_layers(texture_to_replace_level, replacement_texture_level);
-    }
-  }
+  // Merge alphamaps if duplicates.
+  if (replacement_level != -1)
+    merge_layers(replacing_level, replacement_level);
 }
 
 void TextureSet::swap_layers(int layer_1, int layer_2)
@@ -199,44 +187,26 @@ void TextureSet::eraseTextures()
 
 void TextureSet::eraseTexture(size_t id)
 {
+  // Check within range.
   if (id >= nTextures)
-  {
     return;
-  }
 
-  // shift textures above
+  // shift textures above.
   for (size_t i = id; i < nTextures - 1; i++)
   {
-    if (i)
-    {
-      alphamaps[i - 1] = std::nullopt;
-      std::swap (alphamaps[i - 1], alphamaps[i]);
-    }
-
     if (tmp_edit_values)
-    {
-      tmp_edit_values.value()[i].swap(tmp_edit_values.value()[i+1]);
-    }
-
+      tmp_edit_values.value()[i] = tmp_edit_values.value()[i + 1];
+    alphamaps[i] = alphamaps[i + 1];
     _layers_info[i] = _layers_info[i + 1];
   }
 
-  if (nTextures > 1)
-  {
-    alphamaps[nTextures - 2] = std::nullopt;
-  }
-
-  textures.erase(textures.begin()+id);
-  nTextures--;
-
-  // erase the old info as a precaution but it's overriden when adding a new texture
-  _layers_info[nTextures] = ENTRY_MCLY();
-
-  // set the default values for the temporary alphamap too
+  // Remove texture, decrement count
+  alphamaps[nTextures - 1] = std::nullopt;
+  textures.erase(textures.begin() + id);
+  _layers_info[nTextures - 1] = ENTRY_MCLY();
   if (tmp_edit_values)
-  {
-    tmp_edit_values.value()[nTextures].fill(0.f);
-  }
+    tmp_edit_values.value()[nTextures - 1].fill(0.f);
+  nTextures--;
 
   _chunk->registerChunkUpdate(ChunkUpdateFlags::ALPHAMAP); 
   _need_lod_texture_map_update = true;
@@ -1023,16 +993,15 @@ void TextureSet::alphas_to_big_alpha(uint8_t* dest)
   {
     memcpy(alpha(k), alphamaps[k]->getAlpha(), 4096);
   }
-
+  
   for (int i = 0; i < 64 * 64; ++i)
   {
     int a = 255;
 
     for (int k = nTextures - 2; k >= 0; --k)
     {
-      uint8_t val = misc::rounded_255_int_div(*alpha(k, i) * a);
-      a -= val;
-      *alpha(k, i) = val;
+      dest[k * 4096 + i] = misc::rounded_255_int_div(dest[k * 4096 + i] * a);
+      a -= dest[k * 4096 + i];
     }
   }
 }
@@ -1119,16 +1088,19 @@ void TextureSet::convertToOldAlpha()
 
 void TextureSet::merge_layers(size_t id1, size_t id2)
 {
+  // Check id's are valid, and not the same.
   if (id1 >= nTextures || id2 >= nTextures || id1 == id2)
   {
     throw std::invalid_argument("merge_layers: invalid layer id(s)");
   }
 
+  // If 1 is above, swap.
   if (id2 < id1)
   {
     std::swap(id2, id1);
   }
 
+  // Merge alphamaps.
   create_temporary_alphamaps_if_needed();
 
   auto& amap = tmp_edit_values.value();
@@ -1136,10 +1108,12 @@ void TextureSet::merge_layers(size_t id1, size_t id2)
   for (int i = 0; i < 64 * 64; ++i)
   {
     amap[id1][i] += amap[id2][i];
-    // no need to set the id alphamap to 0, it'll be done in "eraseTexture(id2)"
   }
 
+  // Remove the old texture.
   eraseTexture(id2);
+
+  // Notify of update.
   _chunk->registerChunkUpdate(ChunkUpdateFlags::ALPHAMAP); 
   _need_lod_texture_map_update = true;
 }
@@ -1164,7 +1138,7 @@ bool TextureSet::removeDuplicate()
   return changed;
 }
 
-void TextureSet::uploadAlphamapData()
+void TextureSet::uploadAlphamapData(GLuint texture)
 {
   // This method assumes tile's alphamap storage is currently bound to the current texture unit
 
@@ -1172,6 +1146,7 @@ void TextureSet::uploadAlphamapData()
     return;
 
   static std::array<float, 3 * 64 * 64> amap{};
+  memset(&amap, 0, sizeof(amap));
 
   if (tmp_edit_values)
   {
@@ -1179,9 +1154,9 @@ void TextureSet::uploadAlphamapData()
 
     for (int i = 0; i < 64 * 64; ++i)
     {
-      for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
+      for (int alpha_id = 0; alpha_id < nTextures - 1; ++alpha_id)
       {
-        amap[i * 3 + alpha_id] = (alpha_id < nTextures - 1) ? tmp_amaps[alpha_id + 1][i] / 255.f : 0.f;
+        amap[i * 3 + alpha_id] = tmp_amaps[alpha_id + 1][i] / 255.f;
       }
     }
   }
@@ -1196,18 +1171,15 @@ void TextureSet::uploadAlphamapData()
 
     for (int i = 0; i < 64 * 64; ++i)
     {
-      for (int alpha_id = 0; alpha_id < 3; ++alpha_id)
+      for (int alpha_id = 0; alpha_id < nTextures - 1; ++alpha_id)
       {
-        amap[i * 3 + alpha_id] = (alpha_id < nTextures - 1)
-                               ? *(alpha_ptr[alpha_id]++) / 255.0f
-                               : 0.f
-                               ;
+        amap[i * 3 + alpha_id] = *(alpha_ptr[alpha_id]++) / 255.0f;
       }
     }
 
   }
 
-  gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, _chunk->px * 16 + _chunk->py,
+  gl.namedTextureSubImage3DEXT(texture, 0, 0, 0, _chunk->px * 16 + _chunk->py,
                    64, 64, 1, GL_RGB, GL_FLOAT, amap.data());
 
 }
@@ -1230,7 +1202,7 @@ namespace
 
 void TextureSet::update_lod_texture_map()
 {
-  std::array<std::uint16_t, 8> lod;
+  std::array<std::uint16_t, 8> lod {0, 0, 0, 0, 0, 0, 0, 0};
 
   for (std::size_t z = 0; z < 8; ++z)
   {
@@ -1252,8 +1224,6 @@ void TextureSet::update_lod_texture_map()
   _doodadMapping = lod;
   _need_lod_texture_map_update = false;
 }
-
-
 
 uint8_t TextureSet::sum_alpha(size_t offset) const
 {

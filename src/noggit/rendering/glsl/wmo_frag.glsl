@@ -1,5 +1,5 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 410 core
+#version 450 core
 
 // flags
 #define eWMOBatch_ExteriorLit 0x1u
@@ -41,68 +41,7 @@ out vec4 out_color;
 
 vec4 get_tex_color(vec2 tex_coord, uint tex_sampler, int array_index)
 {
-  if (tex_sampler == 0)
-  {
-    return texture(texture_samplers[0], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 1)
-  {
-    return texture(texture_samplers[1], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 2)
-  {
-    return texture(texture_samplers[2], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 3)
-  {
-    return texture(texture_samplers[3], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 4)
-  {
-    return texture(texture_samplers[4], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 5)
-  {
-    return texture(texture_samplers[5], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 6)
-  {
-    return texture(texture_samplers[6], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 7)
-  {
-    return texture(texture_samplers[7], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 8)
-  {
-    return texture(texture_samplers[8], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 9)
-  {
-    return texture(texture_samplers[9], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 10)
-  {
-    return texture(texture_samplers[10], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 11)
-  {
-    return texture(texture_samplers[11], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 12)
-  {
-    return texture(texture_samplers[12], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 13)
-  {
-    return texture(texture_samplers[13], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 14)
-  {
-    return texture(texture_samplers[14], vec3(tex_coord, array_index)).rgba;
-  }
-
-  return vec4(0);
+  return tex_sampler < 15 ? texture(texture_samplers[tex_sampler], vec3(tex_coord, array_index)).rgba : vec4(0);
 }
 
 vec3 apply_lighting(vec3 material)
@@ -165,17 +104,13 @@ void main()
   float alpha_test = !bool(alpha_test_mode) ? -1.f : (alpha_test_mode < 2 ? 0.878431372 : 0.003921568);
 
   if(tex.a < alpha_test)
-  {
     discard;
-  }
 
   vec4 vertex_color = vec4(0., 0., 0., 1.f);
   vec3 light_color = vec3(1.);
 
   if(bool(flags & eWMOBatch_HasMOCV))
-  {
     vertex_color = f_vertex_color;
-  }
 
 
   // see: https://github.com/Deamon87/WebWowViewerCpp/blob/master/wowViewerLib/src/glsl/wmoShader.glsl
@@ -199,6 +134,9 @@ void main()
     out_color = vec4(apply_lighting(tex.rgb), 1.);
   }
 
+  if(out_color.a < alpha_test)
+    discard;
+
   if(fog)
   {
     float start = AmbientColor_FogEnd.w * DiffuseColor_FogStart.w;
@@ -218,8 +156,4 @@ void main()
     out_color.rgb = mix(out_color.rgb, FogColor_FogOn.rgb, fogFactor);
   }
 
-  if(out_color.a < alpha_test)
-  {
-    discard;
-  }
 }

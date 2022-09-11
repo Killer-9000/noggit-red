@@ -2,7 +2,8 @@
 
 #pragma once
 #include <opengl/types.hpp>
-#include <QtGui/QOpenGLFunctions_4_1_Core>
+#include <QtGui/QOpenGLFunctions_4_5_Core>
+#include <array>
 
 // NOGGIT_FORCEINLINE ---------------------------------------------//
 // Macro to use in place of 'inline' to force a function to be inline
@@ -33,7 +34,7 @@ namespace OpenGL
     private:
       context& _context;
       QOpenGLContext* _old_context;
-      QOpenGLFunctions_4_1_Core* _old_core_func;
+      QOpenGLFunctions_4_5_Core* _old_core_func;
     };
 
     struct save_current_context
@@ -53,7 +54,7 @@ namespace OpenGL
     };
 
     QOpenGLContext* _current_context = nullptr;
-    QOpenGLFunctions_4_1_Core* _4_1_core_func = nullptr;
+    QOpenGLFunctions_4_5_Core* _core_func = nullptr;
 
     NOGGIT_FORCEINLINE void enable (GLenum);
     NOGGIT_FORCEINLINE void disable (GLenum);
@@ -127,6 +128,7 @@ namespace OpenGL
                                                       GLenum format,
                                                       GLsizei imageSize,
                                                       const void * data);
+    NOGGIT_FORCEINLINE void compressedTexImage1D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, GLvoid const* data);
     NOGGIT_FORCEINLINE void compressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, GLvoid const* data);
     NOGGIT_FORCEINLINE void compressedTexImage3D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, 	GLsizei depth, GLint border, GLsizei imageSize, GLvoid const* data);
     NOGGIT_FORCEINLINE void generateMipmap (GLenum);
@@ -170,18 +172,18 @@ namespace OpenGL
     NOGGIT_FORCEINLINE GLuint createShader (GLenum shader_type);
     NOGGIT_FORCEINLINE void deleteShader (GLuint shader);
     NOGGIT_FORCEINLINE void shaderSource (GLuint shader, GLsizei count, GLchar const** string, GLint const* length);
-    NOGGIT_FORCEINLINE void compile_shader (GLuint shader);
-    NOGGIT_FORCEINLINE GLint get_shader (GLuint shader, GLenum pname);
+    NOGGIT_FORCEINLINE void compileShader (GLuint shader);
+    NOGGIT_FORCEINLINE GLint getShader (GLuint shader, GLenum pname);
 
     NOGGIT_FORCEINLINE GLuint createProgram();
     NOGGIT_FORCEINLINE void deleteProgram (GLuint program);
     NOGGIT_FORCEINLINE void attachShader (GLuint program, GLuint shader);
     NOGGIT_FORCEINLINE void detachShader (GLuint program, GLuint shader);
-    NOGGIT_FORCEINLINE void link_program (GLuint program);
+    NOGGIT_FORCEINLINE void linkProgram (GLuint program);
     NOGGIT_FORCEINLINE void useProgram (GLuint program);
-    NOGGIT_FORCEINLINE void validate_program (GLuint program);
-    NOGGIT_FORCEINLINE GLint get_program (GLuint program, GLenum pname);
-    NOGGIT_FORCEINLINE std::string get_program_info_log(GLuint program);
+    NOGGIT_FORCEINLINE void validateProgram (GLuint program);
+    NOGGIT_FORCEINLINE GLint getProgram (GLuint program, GLenum pname);
+    NOGGIT_FORCEINLINE std::string getProgramInfoLog(GLuint program);
 
     NOGGIT_FORCEINLINE GLint getAttribLocation (GLuint program, GLchar const* name);
     NOGGIT_FORCEINLINE void vertexAttribPointer (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLvoid const* pointer);
@@ -250,7 +252,50 @@ namespace OpenGL
 
     template<GLenum target, typename T>
     NOGGIT_FORCEINLINE void bufferSubData(GLuint buffer, GLintptr offset, const std::vector<T> &data);
+
+
+    // ========== [[ Bindless/Named calls ]] ==========
+
+    NOGGIT_FORCEINLINE void drawElementsIndirect(GLenum mode, GLenum type, const void* indirect);
+
+    NOGGIT_FORCEINLINE void createBuffersEXT(GLsizei amount, GLuint* buffers);
+    NOGGIT_FORCEINLINE void createTexturesEXT(GLenum target, GLsizei amount, GLuint* buffers);
+
+    template <typename T>
+    NOGGIT_FORCEINLINE void namedBufferSubDataEXT(GLuint buffer, GLintptr offset, std::vector<T> const& data);
+    NOGGIT_FORCEINLINE void namedBufferSubDataEXT(GLuint buffer, GLintptr offset, GLsizeiptr size, GLvoid const* data);
+
+    template <typename T>
+    NOGGIT_FORCEINLINE void namedBufferDataEXT(GLuint buffer, std::vector<T> const& data, GLenum usage);
+    NOGGIT_FORCEINLINE void namedBufferDataEXT(GLuint buffer, GLsizeiptr size, GLvoid const* data, GLenum usage);
+    NOGGIT_FORCEINLINE void namedTextureBufferEXT(GLuint texture, GLenum format, GLuint buffer);
+
+    NOGGIT_FORCEINLINE void bindTextureUnitEXT(GLenum texUnit, GLuint buffer);
+
+    // Expects a container with size and data methods.
+    template <typename T>
+    NOGGIT_FORCEINLINE void bindTexturesEXT(GLenum texUnit, T const& textures);
+    NOGGIT_FORCEINLINE void bindTexturesEXT(GLenum texUnit, GLsizei count, const GLuint* textures);
+
+    NOGGIT_FORCEINLINE void namedTextureSubImage1DEXT(GLuint buffer, GLint level, GLint xOffset, GLint width, GLenum format, GLenum type, GLvoid const* pixels);
+    NOGGIT_FORCEINLINE void namedTextureSubImage2DEXT(GLuint buffer, GLint level, GLint xOffset, GLint yOffset, GLint width, GLint height, GLenum format, GLenum type, GLvoid const* pixels);
+    NOGGIT_FORCEINLINE void namedTextureSubImage3DEXT(GLuint buffer, GLint level, GLint xOffset, GLint zOffset, GLint yOffset, GLint width, GLint height, GLint depth, GLenum format, GLenum type, GLvoid const* pixels);
+
+    NOGGIT_FORCEINLINE void namedTextureStorage1DEXT(GLuint buffer, GLsizei levels, GLenum format, GLint width);
+    NOGGIT_FORCEINLINE void namedTextureStorage2DEXT(GLuint buffer, GLsizei levels, GLenum format, GLint width, GLint height);
+    NOGGIT_FORCEINLINE void namedTextureStorage3DEXT(GLuint buffer, GLsizei levels, GLenum format, GLint width, GLint height, GLint depth);
+
+    NOGGIT_FORCEINLINE void namedTextureCompressedSubImage1D(GLuint buffer, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void* data);
+    NOGGIT_FORCEINLINE void namedTextureCompressedSubImage2D(GLuint buffer, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void* data);
+    NOGGIT_FORCEINLINE void namedTextureCompressedSubImage3D(GLuint buffer, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void* data);
+
+    NOGGIT_FORCEINLINE void namedTextureParameteriEXT(GLuint buffer, GLenum pname, GLint param);
+    NOGGIT_FORCEINLINE void namedTextureParameterfEXT(GLuint buffer, GLenum pname, GLfloat param);
+    NOGGIT_FORCEINLINE void namedTextureParameterivEXT(GLuint buffer, GLenum pname, GLint const* params);
+    NOGGIT_FORCEINLINE void namedTextureParameterfvEXT(GLuint buffer, GLenum pname, GLfloat const* params);
   };
 }
 
 extern OpenGL::context gl;
+
+#include <opengl/context.inl>

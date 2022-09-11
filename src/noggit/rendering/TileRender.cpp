@@ -4,10 +4,8 @@
 #include <noggit/MapTile.h>
 #include <noggit/MapChunk.h>
 #include <noggit/ui/TexturingGUI.h>
-#include <external/tracy/Tracy.hpp>
 
 using namespace Noggit::Rendering;
-
 
 TileRender::TileRender(MapTile* map_tile)
 : _map_tile(map_tile)
@@ -40,19 +38,18 @@ void TileRender::unload()
 {
   if (_uploaded)
   {
+    _chunk_textures.unload();
     _chunk_texture_arrays.unload();
     _buffers.unload();
     _uploaded = false;
     gl.deleteQueries(1, &_tile_occlusion_query);
   }
 
-
   _map_tile->_chunk_update_flags = ChunkUpdateFlags::VERTEX | ChunkUpdateFlags::ALPHAMAP
                                   | ChunkUpdateFlags::SHADOW | ChunkUpdateFlags::MCCV
                                   | ChunkUpdateFlags::NORMALS| ChunkUpdateFlags::HOLES
                                   | ChunkUpdateFlags::AREA_ID| ChunkUpdateFlags::FLAGS;
 }
-
 
 void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
     , const glm::vec3& camera
@@ -61,10 +58,6 @@ void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
     , bool is_selected
 )
 {
-  ZoneScopedN(NOGGIT_CURRENT_FUNCTION);
-
-  static constexpr unsigned NUM_SAMPLERS = 11;
-
   if (!_map_tile->finished.load())
   [[unlikely]]
   {
@@ -134,6 +127,9 @@ void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
 
       auto& chunk = _map_tile->mChunks[chunk_y][chunk_x];
 
+      if (!chunk)
+        continue;
+
       _chunk_instance_data[i].ChunkXZ_TileXZ[0] = chunk->px;
       _chunk_instance_data[i].ChunkXZ_TileXZ[1] = chunk->py;
       _chunk_instance_data[i].ChunkXZ_TileXZ[2] = static_cast<int>(_map_tile->index.x);
@@ -143,12 +139,11 @@ void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
 
       if (flags & ChunkUpdateFlags::ALPHAMAP || _requires_sampler_reset || _texture_not_loaded)
       {
-        gl.activeTexture(GL_TEXTURE0 + 3);
-        gl.bindTexture(GL_TEXTURE_2D_ARRAY, _alphamap_tex);
+        gl.bindTextureUnitEXT(3, _alphamap_tex);
         alphamap_bound = true;
-        chunk->texture_set->uploadAlphamapData();
+        chunk->texture_set->uploadAlphamapData(_alphamap_tex);
 
-        if (!_split_drawcall && !fillSamplers(chunk.get(), i, _draw_calls.size() - 1))
+        if (!_split_drawcall && !fillSamplers(chunk, i, _draw_calls.size() - 1))
         {
           _split_drawcall = true;
         }
@@ -165,26 +160,23 @@ void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
           chunk->updateVerticesData();
         }
 
-        gl.activeTexture(GL_TEXTURE0 + 0);
-        gl.bindTexture(GL_TEXTURE_2D, _height_tex);
-        gl.texSubImage2D(GL_TEXTURE_2D, 0, 0, i, mapbufsize, 1, GL_RGBA,
+        gl.bindTextureUnitEXT(0, _height_tex);
+        gl.namedTextureSubImage2DEXT(_height_tex, 0, 0, i, mapbufsize, 1, GL_RGBA,
                          GL_FLOAT, _map_tile->_chunk_heightmap_buffer.data() + i * mapbufsize * 4);
       }
 
       if (flags & ChunkUpdateFlags::MCCV)
       {
         mccv_bound = true;
-        gl.activeTexture(GL_TEXTURE0 + 1);
-        gl.bindTexture(GL_TEXTURE_2D, _mccv_tex);
-        chunk->update_vertex_colors();
+        gl.bindTextureUnitEXT(1, _mccv_tex);
+        chunk->update_vertex_colors(_mccv_tex);
       }
 
       if (flags & ChunkUpdateFlags::SHADOW)
       {
         shadowmap_bound = true;
-        gl.activeTexture(GL_TEXTURE0 + 2);
-        gl.bindTexture(GL_TEXTURE_2D_ARRAY, _shadowmap_tex);
-        chunk->update_shadows();
+        gl.bindTextureUnitEXT(2, _shadowmap_tex);
+        chunk->update_shadows(_shadowmap_tex);
       }
 
       if (flags & ChunkUpdateFlags::HOLES)
@@ -238,7 +230,7 @@ void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
       {
         auto& chunk = _map_tile->mChunks[i % 16][i / 16];
 
-        if (!fillSamplers(chunk.get(), i, _draw_calls.size() - 1))
+        if (!fillSamplers(chunk, i, _draw_calls.size() - 1))
         {
           MapTileDrawCall& previous_draw_call = _draw_calls[_draw_calls.size() - 1];
           unsigned new_start = previous_draw_call.start_chunk + previous_draw_call.n_chunks;
@@ -248,7 +240,7 @@ void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
           new_draw_call.start_chunk = new_start;
           new_draw_call.n_chunks = 1;
 
-          fillSamplers(chunk.get(), i, _draw_calls.size() - 1);
+          fillSamplers(chunk, i, _draw_calls.size() - 1);
         }
         else
         {
@@ -289,55 +281,45 @@ void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
   gl.bindBufferRange(GL_UNIFORM_BUFFER, OpenGL::ubo_targets::CHUNK_INSTANCE_DATA,
                      _chunk_instance_data_ubo, 0, sizeof(OpenGL::ChunkInstanceDataUniformBlock) * 256);
 
+  if (!heightmap_bound)
+    gl.bindTextureUnitEXT(0, _height_tex);
+
+  if (!mccv_bound)
+    gl.bindTextureUnitEXT(1, _mccv_tex);
+
+  if (!shadowmap_bound)
+    gl.bindTextureUnitEXT(2, _shadowmap_tex);
+  
+  if (!alphamap_bound)
+    gl.bindTextureUnitEXT(3, _alphamap_tex);
+
+  float tile_center_x = _map_tile->xbase + TILESIZE / 2.0f;
+  float tile_center_z = _map_tile->zbase + TILESIZE / 2.0f;
+
+  bool is_lod = misc::dist(tile_center_x, tile_center_z, camera.x, camera.z) > TILESIZE * 3;
+  mcnk_shader.uniform("lod_level", int(is_lod));
 
   for (auto& draw_call : _draw_calls)
   {
-
-    if (!alphamap_bound)
-    {
-      gl.activeTexture(GL_TEXTURE0 + 3);
-      gl.bindTexture(GL_TEXTURE_2D_ARRAY, _alphamap_tex);
-    }
-
-    if (!shadowmap_bound)
-    {
-      gl.activeTexture(GL_TEXTURE0 + 2);
-      gl.bindTexture(GL_TEXTURE_2D_ARRAY, _shadowmap_tex);
-    }
-
-    if (!mccv_bound)
-    {
-      gl.activeTexture(GL_TEXTURE0 + 1);
-      gl.bindTexture(GL_TEXTURE_2D, _mccv_tex);
-    }
-
-    if (!heightmap_bound)
-    {
-      gl.activeTexture(GL_TEXTURE0 + 0);
-      gl.bindTexture(GL_TEXTURE_2D, _height_tex);
-    }
-
-    float tile_center_x = _map_tile->xbase + TILESIZE / 2.0f;
-    float tile_center_z = _map_tile->zbase + TILESIZE / 2.0f;
-
-    bool is_lod = misc::dist(tile_center_x, tile_center_z, camera.x, camera.z) > TILESIZE * 3;
-    mcnk_shader.uniform("lod_level", int(is_lod));
-
     assert(draw_call.n_chunks <= 256);
     mcnk_shader.uniform("base_instance", static_cast<int>(draw_call.start_chunk));
 
-    for (int i = 0; i < NUM_SAMPLERS; ++i)
-    {
-      gl.activeTexture(GL_TEXTURE0 + 5 + i);
-
-      if (draw_call.samplers[i] < 0)
-      {
-        gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
-        continue;
-      }
-
-      gl.bindTexture(GL_TEXTURE_2D_ARRAY, draw_call.samplers[i]);
-    }
+    GLsizei count = 0;
+    while (draw_call.samplers[count] != UINT32_MAX && count < draw_call.samplers.size()) { count++; }
+    gl.bindTexturesEXT(5, draw_call.samplers.size(), nullptr);
+    gl.bindTexturesEXT(5, count, draw_call.samplers.data());
+    //for (int i = 0; i < draw_call.samplers.size(); ++i)
+    //{
+    //  gl.activeTexture(GL_TEXTURE0 + 5 + i);
+    //
+    //  if (draw_call.samplers[i] == UINT32_MAX)
+    //  {
+    //    gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    //    continue;
+    //  }
+    //
+    //  gl.bindTexture(GL_TEXTURE_2D_ARRAY, draw_call.samplers[i]);
+    //}
 
     if (is_lod)
     {
@@ -355,58 +337,32 @@ void TileRender::draw (OpenGL::Scoped::use_program& mcnk_shader
 
 void TileRender::uploadTextures()
 {
+  _chunk_textures.upload();
   _chunk_texture_arrays.upload();
-  gl.activeTexture(GL_TEXTURE0 + 0);
-  gl.bindTexture(GL_TEXTURE_2D, _height_tex);
-  gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, mapbufsize,
-                256, 0, GL_RGBA, GL_FLOAT,nullptr);
 
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  //gl.texParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  //gl.texParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  //gl.texParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  gl.bindTextureUnitEXT(0, _height_tex);
+  gl.namedTextureStorage2DEXT(_height_tex, 1, GL_RGBA32F, mapbufsize, 256);
+  gl.namedTextureParameteriEXT(_height_tex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  gl.namedTextureParameteriEXT(_height_tex, GL_TEXTURE_MAX_LEVEL, 0);
 
-  //const GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
-  //gl.texParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+  gl.bindTextureUnitEXT(1, _mccv_tex);
+  gl.namedTextureStorage2DEXT(_mccv_tex, 1, GL_RGB32F, mapbufsize, 256);
+  gl.namedTextureParameteriEXT(_mccv_tex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  gl.namedTextureParameteriEXT(_mccv_tex, GL_TEXTURE_MAX_LEVEL, 0);
 
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-  gl.bindTexture(GL_TEXTURE_2D, 0);
+  gl.bindTextureUnitEXT(2, _shadowmap_tex);
+  gl.namedTextureStorage3DEXT(_shadowmap_tex, 1, GL_R8, 64, 64, 256);
+  gl.namedTextureParameteriEXT(_shadowmap_tex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  gl.namedTextureParameteriEXT(_shadowmap_tex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  gl.namedTextureParameteriEXT(_shadowmap_tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  gl.namedTextureParameteriEXT(_shadowmap_tex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-  gl.activeTexture(GL_TEXTURE0 + 2);
-  gl.bindTexture(GL_TEXTURE_2D, _mccv_tex);
-  gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, mapbufsize,
-                256, 0, GL_RGB, GL_FLOAT, nullptr);
-
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  //gl.texParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  //gl.texParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  //gl.texParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-  gl.bindTexture(GL_TEXTURE_2D, 0);
-
-  gl.activeTexture(GL_TEXTURE0 + 4);
-  gl.bindTexture(GL_TEXTURE_2D_ARRAY, _alphamap_tex);
-  gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, 64, 64,
-                256, 0, GL_RGB, GL_FLOAT,nullptr);
-
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
-
-  gl.activeTexture(GL_TEXTURE0 + 3);
-  gl.bindTexture(GL_TEXTURE_2D_ARRAY, _shadowmap_tex);
-  gl.texImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RED, 64, 64, 256,
-                0, GL_RED, GL_UNSIGNED_BYTE,nullptr);
-
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  gl.bindTexture(GL_TEXTURE_2D_ARRAY, 0);
+  gl.bindTextureUnitEXT(3, _alphamap_tex);
+  gl.namedTextureStorage3DEXT(_alphamap_tex, 1, GL_RGB8, 64, 64, 256);
+  gl.namedTextureParameteriEXT(_alphamap_tex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  gl.namedTextureParameteriEXT(_alphamap_tex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  gl.namedTextureParameteriEXT(_alphamap_tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  gl.namedTextureParameteriEXT(_alphamap_tex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 void TileRender::doTileOcclusionQuery(OpenGL::Scoped::use_program& occlusion_shader)
@@ -470,8 +426,6 @@ bool TileRender::fillSamplers(MapChunk* chunk, unsigned chunk_index,  unsigned i
 
   _chunk_instance_data[chunk_index].ChunkHoles_DrawImpass_TexLayerCount_CantPaint[2] = chunk->texture_set->num();
 
-  static constexpr unsigned NUM_SAMPLERS = 11;
-
   _chunk_instance_data[chunk_index].ChunkTextureSamplers[0] = 0;
   _chunk_instance_data[chunk_index].ChunkTextureSamplers[1] = 0;
   _chunk_instance_data[chunk_index].ChunkTextureSamplers[2] = 0;
@@ -505,7 +459,7 @@ bool TileRender::fillSamplers(MapChunk* chunk, unsigned chunk_index,  unsigned i
         sampler_id = n;
         break;
       }
-      else if (draw_call.samplers[n] < 0)
+      else if (draw_call.samplers[n] == UINT32_MAX)
       {
         draw_call.samplers[n] = tex_array;
         sampler_id = n;
@@ -516,7 +470,7 @@ bool TileRender::fillSamplers(MapChunk* chunk, unsigned chunk_index,  unsigned i
     // If there are not enough sampler slots (11) we have to split the drawcall :(.
     // Extremely infrequent for terrain. Never for Blizzard terrain as their tilesets
     // use uniform BLP format per map.
-    if (sampler_id < 0)
+    if (sampler_id == UINT32_MAX)
     [[unlikely]]
     {
       return false;

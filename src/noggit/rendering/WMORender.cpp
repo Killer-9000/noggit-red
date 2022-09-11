@@ -80,7 +80,7 @@ void WMORender::draw(OpenGL::Scoped::use_program& wmo_shader
   if (boundingbox)
   {
     //OpenGL::Scoped::bool_setter<GL_BLEND, GL_TRUE> const blend;
-    //gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     for (auto& group : _wmo->groups)
     {

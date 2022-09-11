@@ -2,7 +2,6 @@
 #pragma once
 #include <noggit/scripting/script_selection.hpp>
 #include <noggit/scripting/script_object.hpp>
-#include <FastNoise/FastNoise.h>
 #include <vector>
 #include <string>
 #include <memory>

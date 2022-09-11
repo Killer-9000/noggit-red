@@ -1,65 +1,66 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#include <noggit/DBC.h>
-#include <noggit/MapChunk.h>
+#include <opengl/scoped.hpp>
+#include <opengl/types.hpp>
 #include <noggit/MapView.h>
+#include <noggit/Action.hpp>
+#include <noggit/ActionManager.hpp>
+#include <noggit/DBC.h>
+#include <noggit/map_index.hpp>
+#include <noggit/MapChunk.h>
 #include <noggit/Misc.h>
 #include <noggit/ModelManager.h> // ModelManager
+#include <noggit/project/CurrentProject.hpp>
+#include <noggit/scripting/script_settings.hpp>
+#include <noggit/scripting/scripting_tool.hpp>
+#include <noggit/Selection.h>
 #include <noggit/TextureManager.h> // TextureManager, Texture
-#include <noggit/WMOInstance.h> // WMOInstance
-#include <noggit/World.h>
-#include <noggit/map_index.hpp>
-#include <noggit/uid_storage.hpp>
 #include <noggit/ui/CurrentTexture.h>
 #include <noggit/ui/DetailInfos.h> // detailInfos
 #include <noggit/ui/FlattenTool.hpp>
+#include <noggit/ui/FontNoggit.hpp>
 #include <noggit/ui/Help.h>
 #include <noggit/ui/HelperModels.h>
+#include <noggit/ui/hole_tool.hpp>
+#include <noggit/ui/minimap_widget.hpp>
+#include <noggit/ui/MinimapCreator.hpp>
 #include <noggit/ui/ModelImport.h>
+#include <noggit/ui/object_palette.hpp>
 #include <noggit/ui/ObjectEditor.h>
 #include <noggit/ui/RotationEditor.h>
-#include <noggit/ui/TexturePicker.h>
-#include <noggit/ui/TexturingGUI.h>
-#include <noggit/ui/Toolbar.h> // Noggit::Ui::toolbar
-#include <noggit/ui/Water.h>
-#include <noggit/ui/ZoneIDBrowser.h>
-#include <noggit/ui/windows/noggitWindow/NoggitWindow.hpp>
-#include <noggit/ui/minimap_widget.hpp>
 #include <noggit/ui/ShaderTool.hpp>
 #include <noggit/ui/TerrainTool.hpp>
-#include <noggit/ui/texture_swapper.hpp>
-#include <noggit/ui/texturing_tool.hpp>
-#include <noggit/ui/hole_tool.hpp>
 #include <noggit/ui/texture_palette_small.hpp>
-#include <noggit/ui/MinimapCreator.hpp>
-#include <noggit/project/CurrentProject.hpp>
-#include <opengl/scoped.hpp>
-#include <noggit/ui/tools/ViewToolbar/Ui/ViewToolbar.hpp>
+#include <noggit/ui/texture_swapper.hpp>
+#include <noggit/ui/TexturePicker.h>
+#include <noggit/ui/texturing_tool.hpp>
+#include <noggit/ui/TexturingGUI.h>
+#include <noggit/ui/Toolbar.h> // Noggit::Ui::toolbar
 #include <noggit/ui/tools/AssetBrowser/Ui/AssetBrowser.hpp>
-#include <noggit/ui/tools/PresetEditor/Ui/PresetEditor.hpp>
-#include <noggit/ui/tools/NodeEditor/Ui/NodeEditor.hpp>
-#include <noggit/ui/tools/UiCommon/ImageBrowser.hpp>
 #include <noggit/ui/tools/BrushStack/BrushStack.hpp>
-#include <noggit/ui/tools/LightEditor/LightEditor.hpp>
 #include <noggit/ui/tools/ChunkManipulator/ChunkManipulatorPanel.hpp>
-#include <external/imguipiemenu/PieMenu.hpp>
-#include <external/tracy/Tracy.hpp>
-#include <noggit/ui/object_palette.hpp>
-#include <external/glm/gtc/type_ptr.hpp>
-#include <opengl/types.hpp>
-#include <limits>
-#include <variant>
-#include <noggit/Selection.h>
-
-#include <noggit/scripting/scripting_tool.hpp>
-#include <noggit/scripting/script_settings.hpp>
-
-#include <noggit/ActionManager.hpp>
-#include <noggit/Action.hpp>
-
-#include <noggit/ui/FontNoggit.hpp>
-
+#include <noggit/ui/tools/LightEditor/LightEditor.hpp>
+#include <noggit/ui/tools/PresetEditor/Ui/PresetEditor.hpp>
+#include <noggit/ui/tools/UiCommon/ImageBrowser.hpp>
+#include <noggit/ui/tools/ViewToolbar/Ui/ViewToolbar.hpp>
+#include <noggit/ui/Water.h>
+#include <noggit/ui/windows/noggitWindow/NoggitWindow.hpp>
+#include <noggit/ui/ZoneIDBrowser.h>
+#include <noggit/uid_storage.hpp>
+#include <noggit/WMOInstance.h> // WMOInstance
+#include <noggit/World.h>
 #include "revision.h"
 
+#include <external/glm/gtc/type_ptr.hpp>
+#include <external/imguipiemenu/PieMenu.hpp>
+
+#include <QAbstractScrollArea>
+#include <QCursor>
+#include <QDateTime>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QProgressDialog>
+#include <QScrollBar>
+#include <QSurfaceFormat>
 #include <QtCore/QTimer>
 #include <QtGui/QMouseEvent>
 #include <QtWidgets/QApplication>
@@ -67,38 +68,28 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QStatusBar>
 #include <QWidgetAction>
-#include <QSurfaceFormat>
-#include <QMessageBox>
-#include <QAbstractScrollArea>
-#include <QScrollBar>
-#include <QDateTime>
-#include <QCursor>
-#include <QFileDialog>
-#include <QProgressDialog>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
-
-#include <vector>
+#include <limits>
 #include <random>
-
+#include <variant>
+#include <vector>
+#include <future>
 
 /* Some ugly macros we use */
 // TODO: make those methods instead???
 
 #define DESTRUCTIVE_ACTION(ACTION_CODE)                                                                                \
-QMessageBox::StandardButton reply;                                                                                     \
-reply = QMessageBox::question(this, "Destructive action", "This action cannot be undone. Current change history will be lost. Continue?", \
-QMessageBox::Yes|QMessageBox::No);                                                                                     \
-if (reply == QMessageBox::Yes)                                                                                         \
+if (QMessageBox::question(this, "Destructive action",                                                                  \
+"This action cannot be undone. Current change history will be lost. Continue?", QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes) \
 {                                                                                                                      \
-NOGGIT_ACTION_MGR->purge();                                                                            \
-ACTION_CODE                                                                                                            \
-}                                                                                                                      \
-
+  NOGGIT_ACTION_MGR->purge();                                                                                          \
+  ACTION_CODE                                                                                                          \
+}
 
 #define ADD_ACTION_NS(menu, name, on_action)                      \
   {                                                               \
@@ -506,7 +497,7 @@ void MapView::setupRaiseLowerUi()
     , [this](int vertex_mode, math::degrees const& angle, math::degrees const& orientation)
           {
             makeCurrent();
-            OpenGL::context::scoped_setter const _(::gl, context());
+            OpenGL::context::scoped_setter const _ (::gl, context());
 
             _world->orientVertices(vertex_mode == eVertexMode_Mouse
                                    ? _cursor_pos
@@ -539,7 +530,7 @@ void MapView::setupTexturePainterUi()
     , [=] (std::string const& filename)
            {
              makeCurrent();
-             OpenGL::context::scoped_setter const _(::gl, context());
+             OpenGL::context::scoped_setter const _ (::gl, context());
 
              texturingTool->texture_swap_tool()->set_texture(filename);
            }
@@ -550,7 +541,7 @@ void MapView::setupTexturePainterUi()
     , [=] (std::string const& filename)
            {
              makeCurrent();
-             OpenGL::context::scoped_setter const _(::gl, context());
+             OpenGL::context::scoped_setter const _ (::gl, context());
 
              Noggit::Ui::selected_texture::set({filename, _context});
            }
@@ -597,7 +588,7 @@ void MapView::setupTexturePainterUi()
     , [=](std::string const& filename)
           {
             makeCurrent();
-            OpenGL::context::scoped_setter const _(::gl, context());
+            OpenGL::context::scoped_setter const _ (::gl, context());
 
             Noggit::Ui::selected_texture::set({filename, _context});
             texturingTool->_current_texture->set_texture(filename);
@@ -654,7 +645,7 @@ void MapView::setupTexturePainterUi()
     , [=](std::string const& filename)
           {
             makeCurrent();
-            OpenGL::context::scoped_setter const _(::gl, context());
+            OpenGL::context::scoped_setter const _ (::gl, context());
 
             Noggit::Ui::selected_texture::set({filename, _context});
             texturingTool->_current_texture->set_texture(filename);
@@ -710,7 +701,7 @@ void MapView::setupTexturePainterUi()
     , [=] (scoped_blp_texture_reference texture)
            {
              makeCurrent();
-             OpenGL::context::scoped_setter const _(::gl, context());
+             OpenGL::context::scoped_setter const _ (::gl, context());
              Noggit::Ui::selected_texture::set(std::move(texture));
            }
   );
@@ -718,7 +709,7 @@ void MapView::setupTexturePainterUi()
     , [=]
           {
             makeCurrent();
-            OpenGL::context::scoped_setter const _(::gl, context());
+            OpenGL::context::scoped_setter const _ (::gl, context());
             TexturePicker->shiftSelectedTextureLeft();
           }
   );
@@ -726,7 +717,7 @@ void MapView::setupTexturePainterUi()
     , [=]
           {
             makeCurrent();
-            OpenGL::context::scoped_setter const _(::gl, context());
+            OpenGL::context::scoped_setter const _ (::gl, context());
             TexturePicker->shiftSelectedTextureRight();
           }
   );
@@ -765,7 +756,7 @@ void MapView::setupWaterEditorUi()
     , [this](float factor)
           {
             makeCurrent();
-            OpenGL::context::scoped_setter const _(::gl, context());
+            OpenGL::context::scoped_setter const _ (::gl, context());
             NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_WATER);
             _world->autoGenWaterTrans(_camera.position, factor);
             NOGGIT_ACTION_MGR->endAction();
@@ -776,7 +767,7 @@ void MapView::setupWaterEditorUi()
     , [this]
           {
             makeCurrent();
-            OpenGL::context::scoped_setter const _(::gl, context());
+            OpenGL::context::scoped_setter const _ (::gl, context());
             NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_WATER);
             _world->CropWaterADT(_camera.position);
             NOGGIT_ACTION_MGR->endAction();
@@ -825,7 +816,8 @@ void MapView::setupObjectEditorUi()
   );
 
   _object_palette_dock->setWidget(_object_palette);
-  _object_palette_dock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
+  _object_palette_dock->setAllowedAreas(Qt::AllDockWidgetAreas);
+  //_object_palette_dock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
   _main_window->addDockWidget(Qt::BottomDockWidgetArea, _object_palette_dock);
   connect(this, &QObject::destroyed, _texture_palette_dock, &QObject::deleteLater);
   // End Dock
@@ -854,54 +846,14 @@ void MapView::setupStampUi()
 
 void MapView::setupLightEditorUi()
 {
-  lightEditor = new Noggit::Ui::Tools::LightEditor(this, this);
-  _tool_panel_dock->registerTool("Light Editor", lightEditor);
+  //lightEditor = new Noggit::Ui::Tools::LightEditor(this, this);
+  //_tool_panel_dock->registerTool("Light Editor", lightEditor);
 }
 
 void MapView::setupChunkManipulatorUi()
 {
-  _chunk_manipulator = new Noggit::Ui::Tools::ChunkManipulator::ChunkManipulatorPanel(this, this);
-  _tool_panel_dock->registerTool("Chunk Manipulator", _chunk_manipulator);
-}
-
-void MapView::setupNodeEditor()
-{
-  auto _node_editor = new Noggit::Ui::Tools::NodeEditor::Ui::NodeEditorWidget(this);
-  _node_editor_dock = new QDockWidget("Node editor", this);
-  _node_editor_dock->setWidget(_node_editor);
-  _node_editor_dock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea | Qt::LeftDockWidgetArea);
-
-  _main_window->addDockWidget(Qt::LeftDockWidgetArea, _node_editor_dock);
-  _node_editor_dock->setFeatures(QDockWidget::DockWidgetMovable
-                                 | QDockWidget::DockWidgetFloatable
-                                 | QDockWidget::DockWidgetClosable);
-
-  _node_editor_dock->setVisible(_settings->value ("map_view/node_editor", false).toBool());
-
-  connect(_node_editor_dock, &QDockWidget::visibilityChanged,
-          [=](bool visible)
-          {
-            if (ui_hidden)
-              return;
-
-            _settings->setValue ("map_view/node_editor", visible);
-            _settings->sync();
-          });
-
-  connect(this, &QObject::destroyed, _node_editor_dock, &QObject::deleteLater);
-
-  connect ( &_show_node_editor, &Noggit::BoolToggleProperty::changed
-    , _node_editor_dock, [this]
-            {
-              if (!ui_hidden)
-                _node_editor_dock->setVisible(_show_node_editor.get());
-            }
-  );
-
-  connect ( _node_editor_dock, &QDockWidget::visibilityChanged
-    , &_show_node_editor, &Noggit::BoolToggleProperty::set
-  );
-
+  //_chunk_manipulator = new Noggit::Ui::Tools::ChunkManipulator::ChunkManipulatorPanel(this, this);
+  //_tool_panel_dock->registerTool("Chunk Manipulator", _chunk_manipulator);
 }
 
 void MapView::setupAssetBrowser()
@@ -913,10 +865,12 @@ void MapView::setupAssetBrowser()
   _asset_browser_dock->setFeatures(QDockWidget::DockWidgetMovable
                                    | QDockWidget::DockWidgetFloatable
                                    | QDockWidget::DockWidgetClosable);
-  _asset_browser_dock->setAllowedAreas(Qt::NoDockWidgetArea);
+  //_asset_browser_dock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::LeftDockWidgetArea);
+  //_main_window->addDockWidget(Qt::LeftDockWidgetArea, _asset_browser_dock);
+  //_asset_browser_dock->setAllowedAreas(Qt::NoDockWidgetArea);
 
   _asset_browser_dock->setFloating(true);
-  _asset_browser_dock->hide();
+  //_asset_browser_dock->hide();
 
   _asset_browser_dock->setWidget(_asset_browser);
   _asset_browser_dock->setWindowFlags(
@@ -997,7 +951,7 @@ void MapView::updateDetailInfos(bool no_sel_change_check)
 {
   auto& current_selection = _world->current_selection();
 
-  // update detail infos TODO: selection update signal.
+  // TODO: update detail infos, selection update signal.
   static std::uintptr_t last_sel = 0;
 
   if (guidetailInfos->isVisible())
@@ -1205,7 +1159,7 @@ void MapView::setupAssistMenu()
   , [=]
     {
       makeCurrent();
-      OpenGL::context::scoped_setter const _(::gl, context());
+      OpenGL::context::scoped_setter const _ (::gl, context());
 
       NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_TEXTURE);
       _world->ensureAllTilesetsADT(_camera.position);
@@ -1290,7 +1244,7 @@ void MapView::setupAssistMenu()
                     DESTRUCTIVE_ACTION
                       (
                         makeCurrent();
-                    OpenGL::context::scoped_setter const _(::gl, context());
+                    OpenGL::context::scoped_setter const _ (::gl, context());
                     _world->delete_duplicate_model_and_wmo_instances();
                     )
                   }
@@ -1302,7 +1256,7 @@ void MapView::setupAssistMenu()
   , [this]
   {
     makeCurrent();
-    OpenGL::context::scoped_setter const _(::gl, context());
+    OpenGL::context::scoped_setter const _ (::gl, context());
     _world->exportADTAlphamap(_camera.position);
   }
   );
@@ -1312,7 +1266,7 @@ void MapView::setupAssistMenu()
   , [this]
   {
     makeCurrent();
-    OpenGL::context::scoped_setter const _(::gl, context());
+    OpenGL::context::scoped_setter const _ (::gl, context());
 
     if (!!Noggit::Ui::selected_texture::get())
     {
@@ -1327,7 +1281,7 @@ void MapView::setupAssistMenu()
   , [this]
                   {
                     makeCurrent();
-                    OpenGL::context::scoped_setter const _(::gl, context());
+                    OpenGL::context::scoped_setter const _ (::gl, context());
 
                     _world->exportADTVertexColorMap(_camera.position);
                   }
@@ -1391,7 +1345,7 @@ void MapView::setupAssistMenu()
                 if (heightmap_export_params->exec() == QDialog::Accepted)
                 {
                   makeCurrent();
-                  OpenGL::context::scoped_setter const _(::gl, context());
+                  OpenGL::context::scoped_setter const _ (::gl, context());
 
                   _world->exportADTHeightmap(_camera.position, heightmap_export_min->value(), heightmap_export_max->value());
                 }
@@ -1404,7 +1358,7 @@ void MapView::setupAssistMenu()
   , [this]
       {
         makeCurrent();
-        OpenGL::context::scoped_setter const _(::gl, context());
+        OpenGL::context::scoped_setter const _ (::gl, context());
         _world->exportADTNormalmap(_camera.position);
       }
   );
@@ -1447,7 +1401,7 @@ void MapView::setupAssistMenu()
                     if (adt_import_params->exec() == QDialog::Accepted)
                     {
                       makeCurrent();
-                      OpenGL::context::scoped_setter const _(::gl, context());
+                      OpenGL::context::scoped_setter const _ (::gl, context());
 
                       QString filepath = QFileDialog::getOpenFileName(
                         this,
@@ -1476,7 +1430,7 @@ void MapView::setupAssistMenu()
     {
 
         makeCurrent();
-        OpenGL::context::scoped_setter const _(::gl, context());
+        OpenGL::context::scoped_setter const _ (::gl, context());
 
         NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_TEXTURE);
         _world->importADTAlphamap(_camera.position);
@@ -1516,7 +1470,7 @@ void MapView::setupAssistMenu()
         if (adt_import_height_params->exec() == QDialog::Accepted)
         {
           makeCurrent();
-          OpenGL::context::scoped_setter const _(::gl, context());
+          OpenGL::context::scoped_setter const _ (::gl, context());
 
           QString filepath = QFileDialog::getOpenFileName(
             this,
@@ -1546,7 +1500,7 @@ void MapView::setupAssistMenu()
         if (adt_import_height_params->exec() == QDialog::Accepted)
         {
           makeCurrent();
-          OpenGL::context::scoped_setter const _(::gl, context());
+          OpenGL::context::scoped_setter const _ (::gl, context());
 
           NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_TERRAIN);
           _world->importADTHeightmap(_camera.position, adt_import_height_params_multiplier->value(),
@@ -1584,7 +1538,7 @@ void MapView::setupAssistMenu()
       if (adt_import_vcol_params->exec() == QDialog::Accepted)
       {
         makeCurrent();
-        OpenGL::context::scoped_setter const _(::gl, context());
+        OpenGL::context::scoped_setter const _ (::gl, context());
 
         QString filepath = QFileDialog::getOpenFileName(
           this,
@@ -1613,7 +1567,7 @@ void MapView::setupAssistMenu()
         if (adt_import_vcol_params->exec() == QDialog::Accepted)
         {
           makeCurrent();
-          OpenGL::context::scoped_setter const _(::gl, context());
+          OpenGL::context::scoped_setter const _ (::gl, context());
 
           NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_VERTEX_COLOR);
           _world->importADTVertexColorMap(_camera.position, adt_import_vcol_params_mode->currentIndex());
@@ -1661,7 +1615,7 @@ void MapView::setupAssistMenu()
       DESTRUCTIVE_ACTION
       (
         makeCurrent();
-        OpenGL::context::scoped_setter const _(::gl, context());
+        OpenGL::context::scoped_setter const _ (::gl, context());
         _world->convert_alphamap(false);
       )
     }
@@ -1675,7 +1629,7 @@ void MapView::setupAssistMenu()
         DESTRUCTIVE_ACTION
         (
           makeCurrent();
-          OpenGL::context::scoped_setter const _(::gl, context());
+          OpenGL::context::scoped_setter const _ (::gl, context());
           _world->ensureAllTilesetsAllADTs();
         )
 
@@ -1691,7 +1645,7 @@ void MapView::setupAssistMenu()
       DESTRUCTIVE_ACTION
       (
         makeCurrent();
-        OpenGL::context::scoped_setter const _(::gl, context());
+        OpenGL::context::scoped_setter const _ (::gl, context());
         _world->exportAllADTsAlphamap();
       )
     }
@@ -1704,7 +1658,7 @@ void MapView::setupAssistMenu()
     DESTRUCTIVE_ACTION
     (
       makeCurrent();
-      OpenGL::context::scoped_setter const _(::gl, context());
+      OpenGL::context::scoped_setter const _ (::gl, context());
 
       if (!!Noggit::Ui::selected_texture::get())
       {
@@ -1721,7 +1675,7 @@ void MapView::setupAssistMenu()
       DESTRUCTIVE_ACTION
       (
         makeCurrent();
-        OpenGL::context::scoped_setter const _(::gl, context());
+        OpenGL::context::scoped_setter const _ (::gl, context());
 
         _world->exportAllADTsHeightmap();
       )
@@ -1735,7 +1689,7 @@ void MapView::setupAssistMenu()
       DESTRUCTIVE_ACTION
       (
         makeCurrent();
-        OpenGL::context::scoped_setter const _(::gl, context());
+        OpenGL::context::scoped_setter const _ (::gl, context());
 
         _world->exportAllADTsVertexColorMap();
       )
@@ -1751,7 +1705,7 @@ void MapView::setupAssistMenu()
     DESTRUCTIVE_ACTION
     (
         makeCurrent();
-        OpenGL::context::scoped_setter const _(::gl, context());
+        OpenGL::context::scoped_setter const _ (::gl, context());
         NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_TEXTURE);
         _world->importAllADTsAlphamaps();
         NOGGIT_ACTION_MGR->endAction();
@@ -1769,7 +1723,7 @@ void MapView::setupAssistMenu()
         DESTRUCTIVE_ACTION
         (
             makeCurrent();
-            OpenGL::context::scoped_setter const _(::gl, context());
+            OpenGL::context::scoped_setter const _ (::gl, context());
             NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_TEXTURE);
             _world->importAllADTsHeightmaps(adt_import_height_params_multiplier->value(), adt_import_height_params_mode->currentIndex());
             NOGGIT_ACTION_MGR->endAction();
@@ -1788,7 +1742,7 @@ void MapView::setupAssistMenu()
       DESTRUCTIVE_ACTION
       (
           makeCurrent();
-          OpenGL::context::scoped_setter const _(::gl, context());
+          OpenGL::context::scoped_setter const _ (::gl, context());
           NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eCHUNKS_TEXTURE);
           _world->importAllADTVertexColorMaps(adt_import_vcol_params_mode->currentIndex());
           NOGGIT_ACTION_MGR->endAction();
@@ -1805,7 +1759,7 @@ void MapView::setupAssistMenu()
   , [=]
   {
     makeCurrent();
-    OpenGL::context::scoped_setter const _(::gl, context());
+    OpenGL::context::scoped_setter const _ (::gl, context());
     _world->loadAllTiles();
   }
   );
@@ -1868,8 +1822,6 @@ void MapView::setupViewMenu()
   view_menu->addSeparator();
   view_menu->addAction(createTextSeparator("Tools"));
   view_menu->addSeparator();
-
-  ADD_TOGGLE (view_menu, "Show Node Editor", "Shift+N", _show_node_editor);
 
   view_menu->addSeparator();
   view_menu->addAction(createTextSeparator("Minimap"));
@@ -1954,8 +1906,22 @@ void MapView::setupViewMenu()
   ADD_ACTION (view_menu, "Decrease time speed", Qt::Key_B, [this] { mTimespeed = std::max (0.0f, mTimespeed - 90.0f); });
   ADD_ACTION (view_menu, "Pause time", Qt::Key_J, [this] { mTimespeed = 0.0f; });
   ADD_ACTION (view_menu, "Invert mouse", "I", [this] { mousedir *= -1.f; });
-  ADD_ACTION (view_menu, "Decrease camera speed", Qt::Key_O, [this] { _camera.move_speed *= 0.5f; });
-  ADD_ACTION (view_menu, "Increase camera speed", Qt::Key_P, [this] { _camera.move_speed *= 2.0f; });
+  ADD_ACTION (view_menu, "Decrease camera speed", Qt::Key_O, [this]
+    {
+      _camera.move_speed *= 0.5f;
+      if (_camera.move_speed < _camera.min_move_speed)
+        _camera.move_speed = _camera.min_move_speed;
+      else if (_camera.move_speed > _camera.max_move_speed)
+        _camera.move_speed = _camera.max_move_speed;
+    });
+  ADD_ACTION (view_menu, "Increase camera speed", Qt::Key_P, [this]
+    {
+      _camera.move_speed *= 2.0f;
+      if (_camera.move_speed < _camera.min_move_speed)
+        _camera.move_speed = _camera.min_move_speed;
+      else if (_camera.move_speed > _camera.max_move_speed)
+        _camera.move_speed = _camera.max_move_speed;
+    });
   ADD_ACTION ( view_menu
   , "Turn camera around 180°"
   , "Shift+R"
@@ -1998,48 +1964,9 @@ void MapView::setupHelpMenu()
 
   ADD_TOGGLE (help_menu, "Key Bindings", "Ctrl+F1", _show_keybindings_window);
 
-#if defined(_WIN32) || defined(WIN32)
-  ADD_ACTION_NS ( help_menu
-                , "Forum"
-                , []
-                  {
-                    ShellExecute ( nullptr
-                                 , "open"
-                                 , "http://www.modcraft.io/index.php?board=48.0"
-                                 , nullptr
-                                 , nullptr
-                                 , SW_SHOWNORMAL
-                                 );
-                  }
-                );
-  ADD_ACTION_NS ( help_menu
-                , "Homepage"
-                , []
-                  {
-                    ShellExecute ( nullptr
-                                 , "open"
-                                 , "https://bitbucket.org/berndloerwald/noggit3/"
-                                 , nullptr
-                                 , nullptr
-                                 , SW_SHOWNORMAL
-                                 );
-                  }
-                );
-
-  ADD_ACTION_NS ( help_menu
-                , "Discord"
-                , []
-                  {
-                    ShellExecute ( nullptr
-                                 , "open"
-                                 , "https://discord.gg/UbdFHyM"
-                                 , nullptr
-                                 , nullptr
-                                 , SW_SHOWNORMAL
-                                 );
-                  }
-                );
-#endif
+  ADD_ACTION_NS ( help_menu, "Forum",    [] { system("open http://www.modcraft.io/index.php?board=48.0"); });
+  ADD_ACTION_NS ( help_menu, "Homepage", [] { system("open https://bitbucket.org/berndloerwald/noggit3/"); });
+  ADD_ACTION_NS ( help_menu, "Discord",  [] { system("open https://discord.gg/UbdFHyM"); });
 
 }
 
@@ -2375,10 +2302,10 @@ void MapView::setupHotkeys()
     , [this] { return terrainMode == editing_mode::paint && !NOGGIT_CUR_ACTION; }
   );
 
-  addHotkey (Qt::Key_1, MOD_shift, [this] { _camera.move_speed = 15.0f; });
-  addHotkey (Qt::Key_2, MOD_shift, [this] { _camera.move_speed = 50.0f; });
-  addHotkey (Qt::Key_3, MOD_shift, [this] { _camera.move_speed = 200.0f; });
-  addHotkey (Qt::Key_4, MOD_shift, [this] { _camera.move_speed = 800.0f; });
+  //addHotkey (Qt::Key_1, MOD_shift, [this] { _camera.move_speed = 15.0f; });
+  //addHotkey (Qt::Key_2, MOD_shift, [this] { _camera.move_speed = 50.0f; });
+  //addHotkey (Qt::Key_3, MOD_shift, [this] { _camera.move_speed = 200.0f; });
+  //addHotkey (Qt::Key_4, MOD_shift, [this] { _camera.move_speed = 800.0f; });
   addHotkey (Qt::Key_1, MOD_alt, [this] { texturingTool->set_brush_level(0.0f); });
   addHotkey (Qt::Key_2, MOD_alt, [this] { texturingTool->set_brush_level(255.0f* 0.25f); });
   addHotkey (Qt::Key_3, MOD_alt, [this] { texturingTool->set_brush_level(255.0f* 0.5f); });
@@ -2414,6 +2341,17 @@ void MapView::setupHotkeys()
   addHotkey(Qt::Key_7, MOD_ctrl, [this] { change_selected_wmo_doodadset(7); });
   addHotkey(Qt::Key_8, MOD_ctrl, [this] { change_selected_wmo_doodadset(8); });
   addHotkey(Qt::Key_9, MOD_ctrl, [this] { change_selected_wmo_doodadset(9); });
+
+  addHotkey(Qt::Key_0, MOD_num, [this] { change_selected_wmo_doodadset(0); });
+  addHotkey(Qt::Key_1, MOD_num, [this] { change_selected_wmo_doodadset(1); });
+  addHotkey(Qt::Key_2, MOD_num, [this] { change_selected_wmo_doodadset(2); });
+  addHotkey(Qt::Key_3, MOD_num, [this] { change_selected_wmo_doodadset(3); });
+  addHotkey(Qt::Key_4, MOD_num, [this] { change_selected_wmo_doodadset(4); });
+  addHotkey(Qt::Key_5, MOD_num, [this] { change_selected_wmo_doodadset(5); });
+  addHotkey(Qt::Key_6, MOD_num, [this] { change_selected_wmo_doodadset(6); });
+  addHotkey(Qt::Key_7, MOD_num, [this] { change_selected_wmo_doodadset(7); });
+  addHotkey(Qt::Key_8, MOD_num, [this] { change_selected_wmo_doodadset(8); });
+  addHotkey(Qt::Key_9, MOD_num, [this] { change_selected_wmo_doodadset(9); });
 
   addHotkey(Qt::Key_Escape, MOD_none, [this] { _main_window->close(); });
 }
@@ -2517,7 +2455,6 @@ void MapView::createGUI()
   // End combined dock
 
   setupViewportOverlay();
-  setupNodeEditor();
   setupAssetBrowser();
   setupDetailInfos();
   setupToolbars();
@@ -2565,6 +2502,7 @@ MapView::MapView( math::degrees camera_yaw0
   , _uid_fix (uid_fix)
   , _from_bookmark (from_bookmark)
   , _settings (new QSettings (this))
+  , _farZ(_settings->value("farZ", 2048).toFloat())
   , cursor_color (1.f, 1.f, 1.f, 1.f)
   , _cursorType{CursorType::CIRCLE}
   , _main_window (NoggitWindow)
@@ -2663,12 +2601,12 @@ auto MapView::setBrushTexture(QImage const* img) -> void
 
   std::vector<std::uint32_t> tex(height * width);
 
-  for(int i{}; i < height; ++i)
-    for(int j{}; j < width; ++j)
+  for(int i=0; i < height; ++i)
+    for(int j=0; j < width; ++j)
       tex[i * width + j] = img->pixel(j, i);
 
   makeCurrent();
-  OpenGL::context::scoped_setter const _{gl, context()};
+  OpenGL::context::scoped_setter const _ (::gl, context());
   OpenGL::texture::set_active_texture(4);
   _texBrush->bind();
   gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.data());
@@ -2864,7 +2802,7 @@ void MapView::saveMinimap(MinimapRenderSettings* settings)
 
         if (_world->mapIndex.hasTile(tile))
         {
-          OpenGL::context::scoped_setter const _(::gl, context());
+          OpenGL::context::scoped_setter const _ (::gl, context());
           makeCurrent();
           mmap_render_success = _world->renderer()->saveMinimap(tile, settings, _mmap_combined_image);
 
@@ -3034,8 +2972,6 @@ void MapView::saveMinimap(MinimapRenderSettings* settings)
 
 void MapView::paintGL()
 {
-  ZoneScoped;
-
   static bool lock = false;
 
   if (lock)
@@ -3061,11 +2997,12 @@ void MapView::paintGL()
 
   _last_frame_durations.emplace_back (now - _last_update);
 
+  OpenGL::context::scoped_setter const _ (::gl, context());
+  makeCurrent();
+
   // minimap rendering
   if (saving_minimap)
   {
-    OpenGL::context::scoped_setter const _(::gl, context());
-    makeCurrent();
     _camera_moved_since_last_draw = true;
     lock = true;
     saveMinimap(minimapTool->getMinimapRenderSettings());
@@ -3073,8 +3010,6 @@ void MapView::paintGL()
     return;
   }
 
-  OpenGL::context::scoped_setter const _(::gl, context());
-  makeCurrent();
 
   gl.clear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -3182,8 +3117,6 @@ void MapView::paintGL()
           "Use 'Editor > Force uid check on next opening' to fix the issue."
     );
   }
-
-  FrameMark
 }
 
 void MapView::resizeGL (int width, int height)
@@ -3315,7 +3248,7 @@ void MapView::tick (float dt)
     math::rotate(0.0f, 0.0f, &dirRight.x, &dirRight.z, yaw);
   }
 
-  auto currentSelection = _world->current_selection();
+  auto& currentSelection = _world->current_selection();
   if (_world->has_selection())
   {
     // update rotation editor if the selection has changed
@@ -3349,11 +3282,15 @@ void MapView::tick (float dt)
 
       if (keys != 0.f)
       {
+        NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eOBJECTS_TRANSFORMED,
+          Noggit::ActionModalityControllers::eMMB);
         _world->scale_selected_models(keys*numpad_moveratio / 50.f, World::m2_scaling_type::add);
         _rotation_editor_need_update = true;
       }
       if (keyr != 0.f)
       {
+        NOGGIT_ACTION_MGR->beginAction(this, Noggit::ActionFlags::eOBJECTS_TRANSFORMED,
+          Noggit::ActionModalityControllers::eMMB);
         _world->rotate_selected_models( math::degrees(0.f)
                                       , math::degrees(keyr * numpad_moveratio * 5.f)
                                       , math::degrees(0.f)
@@ -3834,6 +3771,23 @@ void MapView::tick (float dt)
   }
 
   QString status;
+  
+  if (autoSaveTime.count() != 0)
+  {
+    autoSaveTimeTicked = chro::duration_cast<chro::seconds>(chro::steady_clock::now().time_since_epoch());
+    autoSaveTimeTicked -= (autoSaveTimeTicked / autoSaveTime) * autoSaveTime;
+    if (autoSaveTimeTicked.count() == 0)
+    {
+      save(save_mode::changed);
+    }
+    else if (autoSaveTimeTicked >= autoSaveWarningTime && autoSaveTimeTicked.count() > 0)
+    {
+      status += (QString("Autosave in: %1; ")
+                . arg(autoSaveTime.count() - autoSaveTimeTicked.count())
+                );
+    }
+  }
+
   status += ( QString ("tile: %1 %2")
             . arg (std::floor (_camera.position.x / TILESIZE))
             . arg (std::floor (_camera.position.z / TILESIZE))
@@ -4090,7 +4044,7 @@ void MapView::update_cursor_pos()
   {
     float mx = _last_mouse_pos.x(), mz = _last_mouse_pos.y();
 
-    //gl.readBuffer(GL_FRONT);
+    // gl.readBuffer(GL_FRONT);
     gl.bindBuffer(GL_PIXEL_PACK_BUFFER, _buffers[static_cast<unsigned>(buffer_switch)]);
 
     gl.readPixels(mx, height() - mz - 1, 1, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, 0);
@@ -4164,24 +4118,21 @@ glm::mat4x4 MapView::model_view() const
 }
 glm::mat4x4 MapView::projection() const
 {
-  float far_z = _settings->value("farZ", 2048).toFloat();
-
   if (_display_mode == display_mode::in_2D)
   {
     float half_width = width() * 0.5f * _2d_zoom;
     float half_height = height() * 0.5f * _2d_zoom;
 
-    return glm::ortho(-half_width, half_width, -half_height, half_height, -1.f, far_z);
+    return glm::ortho(-half_width, half_width, -half_height, half_height, -1.f, _farZ);
   }
   else
   {
-    return glm::perspective(_camera.fov()._, aspect_ratio(), 1.f, far_z);
+    return glm::perspective(_camera.fov()._, aspect_ratio(), 1.f, _farZ);
   }
 }
 
 void MapView::draw_map()
 {
-  ZoneScoped;
   //! \ todo: make the current tool return the radius
   float radius = 0.0f, inner_radius = 0.0f, angle = 0.0f, orientation = 0.0f;
   glm::vec3 ref_pos;
@@ -4891,7 +4842,7 @@ void MapView::mousePressEvent(QMouseEvent* event)
   }
 
   makeCurrent();
-  OpenGL::context::scoped_setter const _(::gl, context());
+  OpenGL::context::scoped_setter const _ (::gl, context());
 
   switch (event->button())
   {
@@ -4955,53 +4906,52 @@ void MapView::wheelEvent (QWheelEvent* event)
       }
     );
 
+  auto change_camera_speed
+  ([&]()
+    {
+      _camera.move_speed *= (event->angleDelta().y() > 0 ? 2.0f : 0.5f);
+      if (_camera.move_speed < _camera.min_move_speed)
+        _camera.move_speed = _camera.min_move_speed;
+      else if (_camera.move_speed > _camera.max_move_speed)
+        _camera.move_speed = _camera.max_move_speed;
+    }
+  );
+
   if (terrainMode == editing_mode::paint)
   {
-    if (_mod_space_down)
-    {
-      texturingTool->change_brush_level (delta_for_range (255.f));
-    }
-    else if (_mod_alt_down)
-    {
-      texturingTool->change_spray_size (delta_for_range (39.f));
-    }
+    if (_mod_alt_down)
+      texturingTool->change_spray_size(delta_for_range(39.f));
     else if (_mod_shift_down)
-    {
-      texturingTool->change_spray_pressure (delta_for_range (10.f));
-    }
+      texturingTool->change_spray_pressure(delta_for_range(10.f));
+    else if (_mod_space_down)
+      texturingTool->change_brush_level(delta_for_range(255.f));
+    else
+      change_camera_speed();
   }
   else if (terrainMode == editing_mode::flatten_blur)
   {
     if (_mod_alt_down)
-    {
       flattenTool->changeOrientation (delta_for_range (360.f));
-    }
     else if (_mod_shift_down)
-    {
       flattenTool->changeAngle (delta_for_range (89.f));
-    }
     else if (_mod_space_down)
-    {
-      //! \note not actual range
       flattenTool->changeHeight (delta_for_range (40.f));
-    }
+    else
+      change_camera_speed();
   }
   else if (terrainMode == editing_mode::water)
   {
     if (_mod_alt_down)
-    {
       guiWater->changeOrientation (delta_for_range (360.f));
-    }
     else if (_mod_shift_down)
-    {
       guiWater->changeAngle (delta_for_range (89.f));
-    }
     else if (_mod_space_down)
-    {
-      //! \note not actual range
       guiWater->change_height (delta_for_range (40.f));
-    }
+    else
+      change_camera_speed();
   }
+  else
+    change_camera_speed();
 }
 
 void MapView::mouseReleaseEvent (QMouseEvent* event)
@@ -5039,6 +4989,9 @@ void MapView::mouseReleaseEvent (QMouseEvent* event)
 
 void MapView::save(save_mode mode)
 {
+  if (saving)
+    return;
+  saving = true;
   bool save = true;
 
   // Save minimap creator model filters
@@ -5129,6 +5082,7 @@ void MapView::save(save_mode mode)
       , QMessageBox::Ok
       );
   }
+  saving = false;
 }
 
 void MapView::addHotkey(Qt::Key key, size_t modifiers, std::function<void()> function, std::function<bool()> condition)
@@ -5237,4 +5191,15 @@ void MapView::onSettingsSave()
   params->wireframe_color = wireframe_color;
 
   _world->renderer()->markTerrainParamsUniformBlockDirty();
+
+  auto autoSaveInterval = chro::duration<uint32_t>(_settings->value("auto_save_interval", 120).toUInt());
+  auto autoSaveWarning = chro::duration<uint32_t>(_settings->value("auto_save_warning", 10).toUInt());
+  if (autoSaveInterval.count() < 0) autoSaveInterval = chro::duration<uint32_t>(0);
+  if (autoSaveWarning.count() < 0) autoSaveWarning = chro::duration<uint32_t>(0);
+  autoSaveTime = chro::duration_cast<chro::seconds>(autoSaveInterval);
+  autoSaveWarningTime = chro::duration_cast<chro::seconds>(autoSaveWarning);
+  if (autoSaveTime > autoSaveWarningTime)
+    autoSaveWarningTime = autoSaveTime - autoSaveWarningTime;
+  else
+    autoSaveWarningTime = 0s;
 }

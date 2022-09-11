@@ -1,5 +1,7 @@
 #include <noggit/ui/windows/projectCreation/NoggitProjectCreationDialog.h>
+#include <noggit/project/ApplicationProject.h>
 #include <ui_NoggitProjectCreationDialog.h>
+
 #include <QFileDialog>
 #include <QSettings>
 #include <QMessageBox>
@@ -23,13 +25,7 @@ NoggitProjectCreationDialog::NoggitProjectCreationDialog(ProjectInformation& pro
   QObject::connect(ui->project_expansion, QOverload<int>::of(&QComboBox::currentIndexChanged), [&](int index)
                    {
                      auto version_selected = ui->project_expansion->currentText().toStdString();
-
-                     QIcon icon;
-                     if (version_selected == "Wrath Of The Lich King")
-                       icon = QIcon(":/icon-wrath");
-                     else if (version_selected == "Shadowlands")
-                       icon = QIcon(":/icon-shadow");
-                      
+                     QIcon icon = Noggit::Project::ClientVersionFactory::GetIcon(version_selected);
                      ui->expansion_icon->setPixmap(icon.pixmap(QSize(32, 32)));
                    }
   );

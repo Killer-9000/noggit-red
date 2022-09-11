@@ -1,17 +1,16 @@
 #include "ViewportGizmo.hpp"
-#include "noggit/ModelInstance.h"
-#include "noggit/WMOInstance.h"
-#include "noggit/ActionManager.hpp"
-#include "noggit/Action.hpp"
-#include "external/glm/glm.hpp"
-#include <external/glm/gtx/matrix_decompose.hpp>
-#include <external/glm/gtc/type_ptr.hpp>
-#include <external/glm/gtc/quaternion.hpp>
-#include <external/glm/gtx/string_cast.hpp>
+#include <noggit/ActionManager.hpp>
 #include <noggit/MapView.h>
+#include <noggit/ModelInstance.h>
+#include <noggit/WMOInstance.h>
+
+#include <external/glm/glm.hpp>
+#include <external/glm/gtc/quaternion.hpp>
+#include <external/glm/gtc/type_ptr.hpp>
+#include <external/glm/gtx/matrix_decompose.hpp>
+#include <external/glm/gtx/string_cast.hpp>
 
 #include <limits>
-
 
 using namespace Noggit::Ui::Tools::ViewportGizmo;
 
@@ -38,7 +37,7 @@ void ViewportGizmo::handleTransformGizmo(MapView* map_view
 
   int n_selected = selection.size();
 
-  if (!n_selected || (n_selected == 1 & selection[0].index() != eEntry_Object))
+  if (!n_selected || (n_selected == 1 && selection[0].index() != eEntry_Object))
     return;
 
   if (n_selected == 1)

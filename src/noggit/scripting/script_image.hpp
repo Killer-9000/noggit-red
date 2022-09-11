@@ -18,7 +18,7 @@ namespace Noggit
     public:
       image(script_context * ctx, std::string const& path);
       image(script_context * ctx, int width, int height);
-      std::vector<unsigned char> _image;
+      std::shared_ptr<uint8_t> _image;
       int get_index(int x, int y) const;
       unsigned get_pixel(int x, int y) const;
       float gradient_scale(float rel) const;
@@ -37,8 +37,8 @@ namespace Noggit
       float get_alpha(int x, int y) const;
     private:
       void resize(int width, int height);
-      unsigned char const * get_image() const {return _image.data();}
-      unsigned char * get_image_w() {return _image.data();}
+      unsigned char const * get_image() const {return _image.get(); }
+      unsigned char * get_image_w() {return _image.get();}
       unsigned _width = 0;
       unsigned _height = 0;
       unsigned _size = 0;

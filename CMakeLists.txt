@@ -6,6 +6,9 @@
 # ░███  ░░█████ ░░███     ███ ░░███  ░░███ ░░███  ░░███  ░███     ░███        ░███    ░███  ░███ ░   █ ░███    ███
 # █████  ░░█████ ░░░███████░   ░░█████████  ░░█████████  █████    █████       █████   █████ ██████████ ██████████
 #░░░░░    ░░░░░    ░░░░░░░      ░░░░░░░░░    ░░░░░░░░░  ░░░░░    ░░░░░       ░░░░░   ░░░░░ ░░░░░░░░░░ ░░░░░░░░░░
+
+# TODO: Get rid of FetchContent it's too slow.
+
 CMAKE_MINIMUM_REQUIRED(VERSION 3.3)
 CMAKE_POLICY(SET CMP0057 NEW) # "Support new IN_LIST if() operator."
 SET(CMAKE_CXX_STANDARD 20)
@@ -16,6 +19,8 @@ INCLUDE(CheckCXXCompilerFlag)
 INCLUDE(cmake/cmake_function.cmake)
 INCLUDE(cmake/cmake_macro.cmake)
 INCLUDE(FetchContent)
+
+set (DEPENDENCIES_DIR "D:/libraries")
 
 #Project name
 PROJECT(Noggit)
@@ -99,13 +104,9 @@ includePlatform("prefind")
 FIND_PACKAGE(Lua REQUIRED)
 FIND_PACKAGE(StormLib REQUIRED)
 FIND_PACKAGE(CascLib REQUIRED)
-#External packages
 FIND_PACKAGE(OpenGL REQUIRED)
 FIND_PACKAGE(Json REQUIRED)
-FIND_PACKAGE(lodepng REQUIRED)
-
-set(FASTNOISE2_NOISETOOL OFF CACHE BOOL "")
-FIND_PACKAGE(FastNoise2 REQUIRED)
+FIND_PACKAGE(FastNoise REQUIRED)
 
 FIND_PACKAGE(Sol2 REQUIRED)
 FIND_PACKAGE(Qt5 COMPONENTS Widgets OpenGL OpenGLExtensions Network Xml REQUIRED)
@@ -131,25 +132,10 @@ ENDIF()
 ADD_SUBDIRECTORY("${EXTERNAL_SOURCE_DIR}/qt-color-widgets")
 ADD_SUBDIRECTORY("${EXTERNAL_SOURCE_DIR}/framelesshelper")
 ADD_SUBDIRECTORY("${EXTERNAL_SOURCE_DIR}/qtimgui")
-ADD_SUBDIRECTORY("${EXTERNAL_SOURCE_DIR}/QtAdvancedDockingSystem")
-ADD_SUBDIRECTORY("${EXTERNAL_SOURCE_DIR}/NodeEditor")
-ADD_SUBDIRECTORY("${EXTERNAL_SOURCE_DIR}/libnoise")
 ADD_SUBDIRECTORY("${EXTERNAL_SOURCE_DIR}/glm")
 
 # Add the found include directories to our include list.
 INCLUDE_DIRECTORIES(SYSTEM "${CMAKE_SOURCE_DIR}/include/")
-
-OPTION(NOGGIT_BUILD_NODE_DATAMODELS "Build node data models? (turn of for faster compiling)" ON)
-IF(NOT NOGGIT_BUILD_NODE_DATAMODELS)
-  MESSAGE(STATUS "Not building Node data models. Do not attempt to use Node Editor. Do not enable this for deployment!")
-  ADD_DEFINITIONS(-DDO_NOT_BUILD_NODES )
-ENDIF(NOT NOGGIT_BUILD_NODE_DATAMODELS)
-
-OPTION(NOGGIT_ENABLE_TRACY_PROFILER "Enable tracy profiler" OFF)
-IF(NOGGIT_ENABLE_TRACY_PROFILER)
-  MESSAGE(STATUS "Tracy profiler enabled." )
-  ADD_DEFINITIONS(-DTRACY_ENABLE )
-ENDIF(NOGGIT_ENABLE_TRACY_PROFILER)
 
 OPTION(NOGGIT_ALL_WARNINGS "Enable all warnings?" OFF)
 
@@ -182,9 +168,7 @@ INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/PNG2BLP/pngpp")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/PNG2BLP/zlib")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/imguizmo")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/imguipiemenu")
-INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/libnoise/src")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/qtgradienteditor")
-INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/tracy")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/blizzard-database-library/include")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/blizzard-archive-library/include")
 INCLUDE_DIRECTORIES(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
@@ -192,39 +176,27 @@ INCLUDE_DIRECTORIES(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
 #Load noggit source files
 collect_files(math_sources src/math FALSE "*.cpp" "")
 collect_files(opengl_sources src/opengl FALSE "*.cpp" "")
-
-IF(NOT NOGGIT_BUILD_NODE_DATAMODELS)
-  collect_files(noggit_root_sources src/noggit TRUE "*.cpp" "NodeEditor/Nodes/Containers;NodeEditor/Nodes/Data;NodeEditor/Nodes/Functions;NodeEditor/Nodes/Math;NodeEditor/Nodes/World")
-ELSE()
-  collect_files(noggit_root_sources src/noggit TRUE "*.cpp" "")
-ENDIF()
+collect_files(noggit_root_sources src/noggit TRUE "*.cpp" "")
 
 collect_files(png_blp_sources src/external/PNG2BLP TRUE "*.c;*.cpp;" "")
 collect_files(imguizmo_sources src/external/imguizmo FALSE "*.c;*.cpp;" "")
 collect_files(imguipiemenu_sources src/external/imguipiemenu FALSE "*.c;*.cpp;" "")
 collect_files(gradienteditor_sources src/external/qtgradienteditor FALSE "*.c;*.cpp;" "")
-collect_files(tracy_sources src/external/tracy FALSE "*.c;*.cpp;" "")
 collect_files(archive_sources src/external/blizzard-archive-library/src FALSE "*.c;*.cpp;" "")
 collect_files(database_sources src/external/blizzard-database-library/src TRUE "*.c;*.cpp;" "")
 collect_files(util_sources src/util TRUE "*.c;*.cpp;" "")
 collect_files(util_headers src/util TRUE "*.h;*.hpp" "")
 
-collect_files(noggit_root_headers src/noggit TRUE "*.h;*.hpp;*.inl" "")
+collect_files(noggit_root_headers src/noggit TRUE "*.h;*.hpp;*.inl;*.glsl" "")
 collect_files(math_headers src/math FALSE "*.h;*.hpp" "")
-collect_files(opengl_headers src/opengl FALSE "*.h;*.hpp" "")
+collect_files(opengl_headers src/opengl FALSE "*.h;*.hpp;*.inl;*.ipp" "")
 collect_files(shaders src/glsl FALSE "*.glsl" "")
-
-IF(NOT NOGGIT_BUILD_NODE_DATAMODELS)
-  collect_files(red_headers src/noggit/ui/tools TRUE "*.h;*.hpp" "NodeEditor/Nodes/Containers;NodeEditor/Nodes/Data;NodeEditor/Nodes/Functions;NodeEditor/Nodes/Math;NodeEditor/Nodes/World")
-ELSE()
-  collect_files(red_headers src/noggit/ui/tools TRUE "*.h;*.hpp" "")
-ENDIF()
+collect_files(red_headers src/noggit/ui/tools TRUE "*.h;*.hpp" "")
 
 collect_files(png_blp_headers src/external/PNG2BLP TRUE "*.h;*.hpp" "")
 collect_files(imguizmo_headers src/external/imguizmo FALSE "*.h;*.hpp" "")
 collect_files(imguipiemenu_headers src/external/imguipiemenu FALSE "*.h;*.hpp" "")
 collect_files(gradienteditor_headers src/external/qtgradienteditor FALSE "*.h;*.hpp" "")
-collect_files(tracy_headers src/external/tracy FALSE "*.h;*.hpp" "")
 collect_files(archive_headers src/external/blizzard-archive-library/include FALSE "*.h;*.hpp" "")
 collect_files(database_headers src/external/blizzard-database-library/include TRUE "*.h;*.hpp" "")
 
@@ -244,35 +216,33 @@ assign_specific_source_group("resources" ${ResFiles})
 assign_specific_source_group("resources" ${compiled_resource_files})
 
 assign_source_group(
-  ${noggit_root_sources} 
-  ${noggit_root_headers}
-  ${opengl_sources} 
-  ${opengl_headers}
-  ${math_sources} 
-  ${math_headers}
-  ${external_sources} 
+  ${archive_headers}
+  ${archive_sources}
+  ${database_headers}
+  ${database_sources}
   ${external_headers}
-  ${util_sources}
-  ${util_headers}
-  ${shaders}
-  ${red_headers} 
-  ${red_sources}
-  ${png_blp_headers} 
-  ${png_blp_sources}
-  ${imguizmo_headers} 
-  ${imguizmo_sources}
+  ${external_sources} 
   ${gradienteditor_headers} 
   ${gradienteditor_sources}
-  ${resource_files}
-  ${ui_files}
-  ${tracy_sources}
-  ${tracy_headers}
-  ${archive_sources}
-  ${archive_headers}
-  ${database_sources}
-  ${database_headers}
-  ${imguipiemenu_sources}
   ${imguipiemenu_headers}
+  ${imguipiemenu_sources}
+  ${imguizmo_headers} 
+  ${imguizmo_sources}
+  ${math_headers}
+  ${math_sources} 
+  ${noggit_root_headers}
+  ${noggit_root_sources} 
+  ${opengl_headers}
+  ${opengl_sources} 
+  ${png_blp_headers} 
+  ${png_blp_sources}
+  ${red_headers} 
+  ${red_sources}
+  ${resource_files}
+  ${shaders}
+  ${ui_files}
+  ${util_headers}
+  ${util_sources}
 )
 
 
@@ -281,42 +251,40 @@ MESSAGE(STATUS ${moced})
 ADD_EXECUTABLE(noggit
   WIN32
   MACOSX_BUNDLE
-  ${noggit_root_sources}
-  ${opengl_sources}
-  ${database_sources}
-  ${database_headers}
-  ${math_sources}
-  ${external_sources}
-  ${mysql_sources}
-  ${os_sources}
-  ${util_sources}
-  ${util_headers}
-  ${red_sources}
-  ${png_blp_sources}
-  ${imguizmo_sources}
-  ${imguipiemenu_sources}
-  ${gradienteditor_sources}
-  ${tracy_sources}
-  ${archive_sources}
-  ${noggit_root_headers}
-  ${opengl_headers}
-  ${math_headers}
-  ${external_headers}
-  ${mysql_headers}
-  ${os_headers}
-  ${png_blp_headers}
-  ${ResFiles}
   #${moced}
-  ${red_headers}
-  ${imguizmo_headers}
-  ${imguipiemenu_headers}
-  ${gradienteditor_headers}
-  ${tracy_headers}
   ${archive_headers}
+  ${archive_sources}
   ${compiled_resource_files}
   ${compiled_ui_files}
-  ${shaders}
+  ${database_headers}
+  ${database_sources}
+  ${external_headers}
+  ${external_sources}
   ${force_update_file}
+  ${gradienteditor_headers}
+  ${gradienteditor_sources}
+  ${imguipiemenu_headers}
+  ${imguipiemenu_sources}
+  ${imguizmo_headers}
+  ${imguizmo_sources}
+  ${math_headers}
+  ${math_sources}
+  ${mysql_headers}
+  ${mysql_sources}
+  ${noggit_root_headers}
+  ${noggit_root_sources}
+  ${opengl_headers}
+  ${opengl_sources}
+  ${os_headers}
+  ${os_sources}
+  ${png_blp_headers}
+  ${png_blp_sources}
+  ${red_headers}
+  ${red_sources}
+  ${ResFiles}
+  ${shaders}
+  ${util_headers}
+  ${util_sources}
 )
 
 if (UNIX)
@@ -335,24 +303,19 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES (noggit
   ${OPENGL_LIBRARIES}
-  StormLib
   CascLib
-  Qt5::Widgets
+  ColorWidgets-qt5
+  FastNoise::FastNoise
+  FramelessHelper
+  glm
+  nlohmann_json::nlohmann_json
+  qt_imgui_widgets
   Qt5::OpenGL
   Qt5::OpenGLExtensions
+  Qt5::Widgets
   Qt5::Xml
-  ColorWidgets-qt5
-  FramelessHelper
-  qt_imgui_widgets
-  qtadvanceddocking
-  nodes
-  noise-static
-  noiseutils-static
-  glm
-  lodepng
-  FastNoise
-  nlohmann_json::nlohmann_json
   sol2::sane
+  StormLib
 )
 
 #add distribution themes
@@ -418,7 +381,7 @@ IF(FALSE) # GIT_FOUND
 
   ADD_DEPENDENCIES(noggit update_git_revision)
 ELSE()
-  MESSAGE(WARNING "Failed to find a Git executable, will NOT produce a useful version string. Crash logs will be useless. Do NOT distribute.")
+  # MESSAGE(WARNING "Failed to find a Git executable, will NOT produce a useful version string. Crash logs will be useless. Do NOT distribute.")
 
   SET(NOGGIT_GIT_VERSION_STRING "UNKNOWN")
   CONFIGURE_FILE("${_noggit_revision_template_file}" "${_noggit_revision_output_file}" @ONLY)

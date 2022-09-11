@@ -4,15 +4,13 @@
 #include <noggit/tool_enums.hpp>
 #include <noggit/ContextObject.hpp>
 
+#include <QMessageBox>
+
 #include <vector>
 #include <cmath>
 #include <stdexcept>
-#include <QMatrix4x4>
-#include <QVector3D>
-
 
 using namespace Noggit::Ui::Tools::AssetBrowser;
-
 
 ModelViewer::ModelViewer(QWidget* parent, Noggit::NoggitRenderContext context)
  : PreviewRenderer(0, 0, context, parent)
@@ -44,19 +42,27 @@ void ModelViewer::initializeGL()
 
 void ModelViewer::paintGL()
 {
+  if (_hasError)
+    return;
   const qreal now(_startup_time.elapsed() / 1000.0);
 
   OpenGL::context::scoped_setter const _ (::gl, context());
   makeCurrent();
 
   gl.clear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   tick(now - _last_update);
-
   _last_update = now;
 
-  draw();
-
+  // Catch an exception, send a message, and don't render anything, until new model set.
+  try
+  {
+    draw();
+  }
+  catch (std::exception&)
+  {
+    _hasError = true;
+    QMessageBox::warning(this, "Error rendering", "There was a error while rendering this model, as such it is recommended to not use.", QMessageBox::Ok);
+  }
 }
 
 void ModelViewer::resizeGL(int w, int h)
@@ -71,35 +77,26 @@ void ModelViewer::tick(float dt)
   PreviewRenderer::tick(dt);
 
   if (turn)
-  {
     _camera.add_to_yaw(math::degrees(turn));
-  }
   if (lookat)
-  {
     _camera.add_to_pitch(math::degrees(lookat));
-  }
   if (moving)
-  {
     _camera.move_forward(moving, dt);
-  }
   if (strafing)
-  {
     _camera.move_horizontal(strafing, dt);
-  }
   if (updown)
-  {
     _camera.move_vertical(updown, dt);
-  }
 
 }
 
-void ModelViewer::setModel(std::string const& filename)
+void ModelViewer::setModel(const std::string& filename)
 {
   OpenGL::context::scoped_setter const _ (::gl, context());
   makeCurrent();
   PreviewRenderer::setModel(filename);
   emit model_set(filename);
   _last_selected_model = filename;
+  _hasError = false;
 }
 
 float ModelViewer::aspect_ratio() const
@@ -135,43 +132,24 @@ void ModelViewer::mouseReleaseEvent(QMouseEvent* event)
 void ModelViewer::wheelEvent(QWheelEvent* event)
 {
   if (event->angleDelta().y() > 0)
-  {
     _move_sensitivity = std::min(_move_sensitivity + 0.5f / 30.0f, 1.0f);
-  }
   else
-  {
     _move_sensitivity = std::max(_move_sensitivity - 0.5f / 30.0f, 1.0f / 30.0f);
-  }
-
   emit sensitivity_changed();
 }
 
 void ModelViewer::keyReleaseEvent(QKeyEvent* event)
 {
   if (event->key() == Qt::Key_W || event->key() == Qt::Key_S)
-  {
     moving = 0.0f;
-  }
-
   if (event->key() == Qt::Key_Up || event->key() == Qt::Key_Down)
-  {
     lookat = 0.0f;
-  }
-
   if (event->key() == Qt::Key_Right || event->key() == Qt::Key_Left)
-  {
     turn  = 0.0f;
-  }
-
   if (event->key() == Qt::Key_D || event->key() == Qt::Key_A)
-  {
     strafing  = 0.0f;
-  }
-
   if (event->key() == Qt::Key_Q || event->key() == Qt::Key_E)
-  {
     updown  = 0.0f;
-  }
 
 }
 
@@ -189,49 +167,29 @@ void ModelViewer::keyPressEvent(QKeyEvent* event)
   event->accept();
 
   if (event->key() == Qt::Key_W)
-  {
     moving = _move_sensitivity;
-  }
   if (event->key() == Qt::Key_S)
-  {
     moving = -_move_sensitivity;
-  }
 
   if (event->key() == Qt::Key_Up)
-  {
     lookat = _move_sensitivity;
-  }
   if (event->key() == Qt::Key_Down)
-  {
     lookat = -_move_sensitivity;
-  }
 
   if (event->key() == Qt::Key_Right)
-  {
     turn = _move_sensitivity;
-  }
   if (event->key() == Qt::Key_Left)
-  {
     turn = -_move_sensitivity;
-  }
 
   if (event->key() == Qt::Key_D)
-  {
     strafing = _move_sensitivity;
-  }
   if (event->key() == Qt::Key_A)
-  {
     strafing = -_move_sensitivity;
-  }
 
   if (event->key() == Qt::Key_Q)
-  {
     updown = _move_sensitivity;
-  }
   if (event->key() == Qt::Key_E)
-  {
     updown = -_move_sensitivity;
-  }
 }
 
 QStringList ModelViewer::getDoodadSetNames(const std::string& filename)
@@ -241,15 +199,9 @@ QStringList ModelViewer::getDoodadSetNames(const std::string& filename)
   for (auto& wmo_instance : _wmo_instances)
   {
     if (wmo_instance.wmo->file_key().filepath() != filename)
-    {
       continue;
-    }
-
     for (auto& doodad_set : wmo_instance.wmo->doodadsets)
-    {
       names.append(doodad_set.name);
-    }
-
     break;
   }
 
@@ -261,16 +213,11 @@ void ModelViewer::setActiveDoodadSet(const std::string& filename, const std::str
   for (auto& wmo_instance : _wmo_instances)
   {
     if (wmo_instance.wmo->file_key().filepath() != filename)
-    {
       continue;
-    }
 
     int counter = 0;
     for (auto& doodad_set : wmo_instance.wmo->doodadsets)
-    {
-      wmo_instance.change_doodadset(counter);
-      counter++;
-    }
+      wmo_instance.change_doodadset(counter++);
 
     break;
   }

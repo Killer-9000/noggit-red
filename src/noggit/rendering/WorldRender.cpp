@@ -1,12 +1,12 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
 #include "WorldRender.hpp"
-#include <external/tracy/Tracy.hpp>
 #include <math/frustum.hpp>
-#include <noggit/World.h>
-#include <external/PNG2BLP/Png2Blp.h>
 #include <noggit/DBC.h>
 #include <noggit/project/CurrentProject.hpp>
+#include <noggit/World.h>
+
+#include <PNG2BLP/Png2Blp.h>
 
 #include <QDir>
 #include <QBuffer>
@@ -59,7 +59,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
 )
 {
 
-  ZoneScoped;
 
   glm::mat4x4 const mvp(projection * model_view);
   math::frustum const frustum (mvp);
@@ -172,7 +171,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
   // only draw the sky in 3D
   if(!minimap_render && display == display_mode::in_3D)
   {
-    ZoneScopedN("World::draw() : Draw skies");
     OpenGL::Scoped::use_program m2_shader {*_m2_program.get()};
 
     bool hadSky = false;
@@ -227,22 +225,19 @@ void WorldRender::draw (glm::mat4x4 const& model_view
   // Draw verylowres heightmap
   if (draw_fog && draw_terrain)
   {
-    ZoneScopedN("World::draw() : Draw horizon");
     _horizon_render->draw (model_view, projection, &_world->mapIndex, _skies->color_set[FOG_COLOR], _cull_distance, frustum, camera_pos, display);
   }
 
   gl.enable(GL_DEPTH_TEST);
   gl.depthFunc(GL_LEQUAL); // less z-fighting artifacts this way, I think
-  //gl.disable(GL_BLEND);
+  // gl.disable(GL_BLEND);
   gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  //gl.disable(GL_CULL_FACE);
+  // gl.disable(GL_CULL_FACE);
 
   _world->_n_rendered_tiles = 0;
 
   if (draw_terrain)
   {
-    ZoneScopedN("World::draw() : Draw terrain");
-
     gl.disable(GL_BLEND);
 
     {
@@ -303,7 +298,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
 
   if (terrainMode == editing_mode::object && _world->has_multiple_model_selected())
   {
-    ZoneScopedN("World::draw() : Draw pivot point");
     OpenGL::Scoped::bool_setter<GL_DEPTH_TEST, GL_FALSE> const disable_depth_test;
 
     float dist = glm::distance(camera_pos, _world->_multi_select_pivot.value());
@@ -312,13 +306,11 @@ void WorldRender::draw (glm::mat4x4 const& model_view
 
   if (use_ref_pos)
   {
-    ZoneScopedN("World::draw() : Draw ref pos");
     _sphere_render.draw(mvp, ref_pos, cursor_color, 0.3f);
   }
 
   if (terrainMode == editing_mode::ground && ground_editing_brush == eTerrainType_Vertex)
   {
-    ZoneScopedN("World::draw() : Draw vertex points");
     float size = glm::distance(_world->vertexCenter(), camera_pos);
     gl.pointSize(std::max(0.001f, 10.0f - (1.25f * size / CHUNKSIZE)));
 
@@ -438,6 +430,17 @@ void WorldRender::draw (glm::mat4x4 const& model_view
           if (tile->renderer()->objectsFrustumCullTest() > 1 || frustum.intersects(wmo_instance->extents[1], wmo_instance->extents[0]))
           {
             wmos_to_draw.push_back(wmo_instance);
+            
+            if (draw_wmo_doodads)
+            {
+              auto* doodads = wmo_instance->get_doodads(draw_hidden_models);
+              if (doodads == nullptr)
+                continue;
+
+              for (auto& doodad_group : *doodads)
+                for (wmo_doodad_instance& doodad_instance : doodad_group.second)
+                  models_to_draw[doodad_instance.model.get()].push_back(doodad_instance.transformMatrix());
+            }
           }
         }
       }
@@ -447,76 +450,74 @@ void WorldRender::draw (glm::mat4x4 const& model_view
   // WMOs / map objects
   if (draw_wmo || _world->mapIndex.hasAGlobalWMO())
   {
-    ZoneScopedN("World::draw() : Draw WMOs");
+    OpenGL::Scoped::use_program wmo_program{*_wmo_program.get()};
+
+    wmo_program.uniform("camera", glm::vec3(camera_pos.x, camera_pos.y, camera_pos.z));
+
+    gl.enable(GL_CULL_FACE);
+
+    for (auto& instance: wmos_to_draw)
     {
-      OpenGL::Scoped::use_program wmo_program{*_wmo_program.get()};
+      bool is_hidden = instance->wmo->is_hidden();
 
-      wmo_program.uniform("camera", glm::vec3(camera_pos.x, camera_pos.y, camera_pos.z));
+      bool is_exclusion_filtered = false;
 
-
-      for (auto& instance: wmos_to_draw)
+      // minimap render exclusion filters
+      // per-model
+      if (minimap_render && minimap_render_settings->use_filters)
       {
-        bool is_hidden = instance->wmo->is_hidden();
-
-        bool is_exclusion_filtered = false;
-
-        // minimap render exclusion filters
-        // per-model
-        if (minimap_render && minimap_render_settings->use_filters)
+        if (instance->instance_model()->file_key().hasFilepath())
         {
-          if (instance->instance_model()->file_key().hasFilepath())
+          for(int i = 0; i < minimap_render_settings->wmo_model_filter_exclude->count(); ++i)
           {
-            for(int i = 0; i < minimap_render_settings->wmo_model_filter_exclude->count(); ++i)
-            {
-              auto item = reinterpret_cast<Ui::MinimapWMOModelFilterEntry*>(
-                  minimap_render_settings->wmo_model_filter_exclude->itemWidget(
-                  minimap_render_settings->wmo_model_filter_exclude->item(i)));
+            auto item = reinterpret_cast<Ui::MinimapWMOModelFilterEntry*>(
+                minimap_render_settings->wmo_model_filter_exclude->itemWidget(
+                minimap_render_settings->wmo_model_filter_exclude->item(i)));
 
-              if (item->getFileName().toStdString() == instance->instance_model()->file_key().filepath())
-              {
-                is_exclusion_filtered = true;
-                break;
-              }
-            }
-          }
-
-          // per-instance
-          for(int i = 0; i < minimap_render_settings->wmo_instance_filter_exclude->count(); ++i)
-          {
-            auto item = reinterpret_cast<Ui::MinimapInstanceFilterEntry*>(
-                minimap_render_settings->wmo_instance_filter_exclude->itemWidget(
-                minimap_render_settings->wmo_instance_filter_exclude->item(i)));
-
-            if (item->getUid() == instance->uid)
+            if (item->getFileName().toStdString() == instance->instance_model()->file_key().filepath())
             {
               is_exclusion_filtered = true;
               break;
             }
           }
-
-          // skip model rendering if excluded by filter
-          if (is_exclusion_filtered)
-            continue;
         }
 
-
-        if (draw_hidden_models || !is_hidden)
+        // per-instance
+        for(int i = 0; i < minimap_render_settings->wmo_instance_filter_exclude->count(); ++i)
         {
-          instance->draw(wmo_program
-              , model_view
-              , projection
-              , frustum
-              , _cull_distance
-              , camera_pos
-              , is_hidden
-              , draw_wmo_doodads
-              , draw_fog
-              , _world->current_selection()
-              , _world->animtime
-              , _skies->hasSkies()
-              , display
-          );
+          auto item = reinterpret_cast<Ui::MinimapInstanceFilterEntry*>(
+              minimap_render_settings->wmo_instance_filter_exclude->itemWidget(
+              minimap_render_settings->wmo_instance_filter_exclude->item(i)));
+
+          if (item->getUid() == instance->uid)
+          {
+            is_exclusion_filtered = true;
+            break;
+          }
         }
+
+        // skip model rendering if excluded by filter
+        if (is_exclusion_filtered)
+          continue;
+      }
+
+
+      if (draw_hidden_models || !is_hidden)
+      {
+        instance->draw(wmo_program
+            , model_view
+            , projection
+            , frustum
+            , _cull_distance
+            , camera_pos
+            , is_hidden
+            , draw_wmo_doodads
+            , draw_fog
+            , _world->current_selection()
+            , _world->animtime
+            , _skies->hasSkies()
+            , display
+        );
       }
     }
   }
@@ -587,17 +588,11 @@ void WorldRender::draw (glm::mat4x4 const& model_view
   // M2s / models
   if (draw_models || draw_doodads_wmo || (minimap_render && minimap_render_settings->use_filters))
   {
-    ZoneScopedN("World::draw() : Draw M2s");
-
     if (draw_model_animations)
-    {
       ModelManager::resetAnim();
-    }
 
     if (_world->need_model_updates)
-    {
       _world->update_models_by_filename();
-    }
 
     std::unordered_map<Model*, std::size_t> model_boxes_to_draw;
 
@@ -613,13 +608,15 @@ void WorldRender::draw (glm::mat4x4 const& model_view
         gl.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         gl.disable(GL_BLEND);
         gl.depthMask(GL_TRUE);
-        gl.enable(GL_CULL_FACE);
+        //gl.enable(GL_CULL_FACE);
         m2_shader.uniform("blend_mode", 0);
         m2_shader.uniform("unfogged", static_cast<int>(model_render_state.unfogged));
         m2_shader.uniform("unlit",  static_cast<int>(model_render_state.unlit));
         m2_shader.uniform("tex_unit_lookup_1", 0);
         m2_shader.uniform("tex_unit_lookup_2", 0);
         m2_shader.uniform("pixel_shader", 0);
+
+        gl.disable(GL_CULL_FACE);
 
         for (auto& pair : models_to_draw)
         {
@@ -809,8 +806,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
 
   if (draw_water)
   {
-    ZoneScopedN("World::draw() : Draw water");
-
     // draw the water on both sides
     OpenGL::Scoped::bool_setter<GL_CULL_FACE, GL_FALSE> const cull;
 
@@ -847,7 +842,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
 
   if (angled_mode || use_ref_pos)
   {
-    ZoneScopedN("World::draw() : Draw angles");
     OpenGL::Scoped::bool_setter<GL_CULL_FACE, GL_FALSE> cull;
     OpenGL::Scoped::depth_mask_setter<GL_FALSE> const depth_mask;
 
@@ -896,7 +890,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
   // draw last because of the transparency
   if (draw_mfbo)
   {
-    ZoneScopedN("World::draw() : Draw flight bounds");
     // don't write on the depth buffer
     OpenGL::Scoped::depth_mask_setter<GL_FALSE> const depth_mask;
 
@@ -922,7 +915,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
 
 void WorldRender::upload()
 {
-  ZoneScoped;
   _world->mapIndex.setAdt(false);
 
   if (_world->mapIndex.hasAGlobalWMO())
@@ -1132,7 +1124,6 @@ void WorldRender::upload()
 
 void WorldRender::unload()
 {
-  ZoneScoped;
   _mcnk_program.reset();
   _mfbo_program.reset();
   _m2_program.reset();
@@ -1161,7 +1152,6 @@ void WorldRender::unload()
 
 void WorldRender::updateMVPUniformBlock(const glm::mat4x4& model_view, const glm::mat4x4& projection)
 {
-  ZoneScoped;
 
   _mvp_ubo_data.model_view = model_view;
   _mvp_ubo_data.projection = projection;
@@ -1173,7 +1163,6 @@ void WorldRender::updateMVPUniformBlock(const glm::mat4x4& model_view, const glm
 
 void WorldRender::updateLightingUniformBlock(bool draw_fog, glm::vec3 const& camera_pos)
 {
-  ZoneScoped;
 
   int daytime = static_cast<int>(_world->time) % 2880;
 
@@ -1198,13 +1187,12 @@ void WorldRender::updateLightingUniformBlock(bool draw_fog, glm::vec3 const& cam
   _lighting_ubo_data.RiverColorLight = { river_color_light.x,river_color_light.y,river_color_light.z, _skies->river_shallow_alpha()};
   _lighting_ubo_data.RiverColorDark = { river_color_dark.x,river_color_dark.y,river_color_dark.z, _skies->river_deep_alpha()};
 
-  gl.bindBuffer(GL_UNIFORM_BUFFER, _lighting_ubo);
-  gl.bufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(OpenGL::LightingUniformBlock), &_lighting_ubo_data);
+  //gl.bindBuffer(GL_UNIFORM_BUFFER, _lighting_ubo);
+  gl.namedBufferSubDataEXT(_lighting_ubo, 0, sizeof(OpenGL::LightingUniformBlock), &_lighting_ubo_data);
 }
 
 void WorldRender::updateLightingUniformBlockMinimap(MinimapRenderSettings* settings)
 {
-  ZoneScoped;
 
   glm::vec3 diffuse = settings->diffuse_color;
   glm::vec3 ambient = settings->ambient_color;
@@ -1224,7 +1212,6 @@ void WorldRender::updateLightingUniformBlockMinimap(MinimapRenderSettings* setti
 
 void WorldRender::updateTerrainParamsUniformBlock()
 {
-  ZoneScoped;
   gl.bindBuffer(GL_UNIFORM_BUFFER, _terrain_params_ubo);
   gl.bufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(OpenGL::TerrainParamsUniformBlock), &_terrain_params_ubo_data);
   _need_terrain_params_ubo_update = false;
@@ -1232,7 +1219,6 @@ void WorldRender::updateTerrainParamsUniformBlock()
 
 void WorldRender::setupChunkVAO(OpenGL::Scoped::use_program& mcnk_shader)
 {
-  ZoneScoped;
   OpenGL::Scoped::vao_binder const _ (_mapchunk_vao);
 
   {
@@ -1248,7 +1234,6 @@ void WorldRender::setupChunkVAO(OpenGL::Scoped::use_program& mcnk_shader)
 
 void WorldRender::setupChunkBuffers()
 {
-  ZoneScoped;
 
   // vertices
 
@@ -1402,7 +1387,6 @@ void WorldRender::setupChunkBuffers()
 
 void WorldRender::setupLiquidChunkVAO(OpenGL::Scoped::use_program& water_shader)
 {
-  ZoneScoped;
   OpenGL::Scoped::vao_binder const _ (_liquid_chunk_vao);
 
   {
@@ -1413,7 +1397,6 @@ void WorldRender::setupLiquidChunkVAO(OpenGL::Scoped::use_program& water_shader)
 
 void WorldRender::setupLiquidChunkBuffers()
 {
-  ZoneScoped;
 
   // vertices
   glm::vec2 vertices[768 / 2];
@@ -1443,7 +1426,6 @@ void WorldRender::setupLiquidChunkBuffers()
 
 void WorldRender::setupOccluderBuffers()
 {
-  ZoneScoped;
   static constexpr std::array<std::uint16_t, 36> indices
       {
           /*Above ABC,BCD*/
@@ -1480,7 +1462,6 @@ void WorldRender::drawMinimap ( MapTile *tile
     , MinimapRenderSettings* settings
 )
 {
-  ZoneScoped;
 
   // Also load a tile above the current one to correct the lookat approximation
   TileIndex m_tile = TileIndex(camera_pos);
@@ -1509,7 +1490,6 @@ void WorldRender::drawMinimap ( MapTile *tile
 
 bool WorldRender::saveMinimap(TileIndex const& tile_idx, MinimapRenderSettings* settings, std::optional<QImage>& combined_image)
 {
-  ZoneScoped;
   // Setup framebuffer
   QOpenGLFramebufferObjectFormat fmt;
   fmt.setSamples(0);

@@ -4,8 +4,10 @@
 #include <noggit/ui/windows/projectSelection/components/LoadProjectComponent.hpp>
 #include <noggit/project/CurrentProject.hpp>
 
-#include <filesystem>
 #include <QString>
+#include <QFileDialog>
+
+#include <filesystem>
 
 #include "ui_NoggitProjectSelectionWindow.h"
 

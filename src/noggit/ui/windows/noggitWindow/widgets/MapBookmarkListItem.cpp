@@ -1,7 +1,9 @@
-#include <QListWidget>
 #include <noggit/ui/windows/noggitWindow/widgets/MapBookmarkListItem.hpp>
 #include <noggit/ui/FontAwesome.hpp>
+#include <QListWidget>
+#include <QLabel>
 #include <sstream>
+
 namespace Noggit::Ui::Widget
 {
     MapListBookmarkItem::MapListBookmarkItem(const MapListBookmarkData& data, QWidget* parent = nullptr) : QWidget(parent)
@@ -59,7 +61,7 @@ namespace Noggit::Ui::Widget
 
     QString MapListBookmarkItem::toCamelCase(const QString& s)
     {
-        QStringList parts = s.split(' ', QString::SkipEmptyParts);
+        QStringList parts = s.split(' ', Qt::SkipEmptyParts);
         for (int i = 0; i < parts.size(); ++i)
             parts[i].replace(0, 1, parts[i][0].toUpper());
 

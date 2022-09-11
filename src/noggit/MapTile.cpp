@@ -16,7 +16,6 @@
 #include <ClientFile.hpp>
 #include <opengl/scoped.hpp>
 #include <opengl/shader.hpp>
-#include <external/tracy/Tracy.hpp>
 #include <util/CurrentFunction.hpp>
 
 
@@ -67,6 +66,7 @@ MapTile::MapTile( int pX
   , _object_instance_extents{glm::vec3{std::numeric_limits<float>::max()}, glm::vec3{std::numeric_limits<float>::lowest()}}
   , _center{pX * TILESIZE + TILESIZE / 2.f, 0.f, pZ * TILESIZE + TILESIZE / 2.f}
 {
+  uids.reserve(1000);
 }
 
 MapTile::~MapTile()
@@ -80,6 +80,13 @@ MapTile::~MapTile()
   }
 
   _world->remove_models_if_needed(uids);
+
+  for (int i = 0; i < 16; i++)
+  {
+    for (int j = 0; j < 16; j++)
+      delete mChunks[i][j];
+  }
+
 }
 
 void MapTile::waitForChildrenLoaded()
@@ -94,9 +101,9 @@ void MapTile::waitForChildrenLoaded()
   {
     for (int j = 0; j < 16; ++j)
     {
-      for (int k = 0; k < mChunks[i][j].get()->texture_set->num(); ++k)
+      for (int k = 0; k < mChunks[i][j]->texture_set->num(); ++k)
       {
-        (*mChunks[i][j].get()->texture_set->getTextures())[k].get()->wait_until_loaded();
+        (*mChunks[i][j]->texture_set->getTextures())[k].get()->wait_until_loaded();
       }
     }
   }
@@ -359,10 +366,11 @@ void MapTile::finishLoading()
     unsigned x = nextChunk / 16;
     unsigned z = nextChunk % 16;
 
-    mChunks[x][z] = std::make_unique<MapChunk> (this, &theFile, mBigAlpha, _mode, _context);
+    if (mChunks[x][z])
+      delete mChunks[x][z];
 
-    auto& chunk = mChunks[x][z];
-    _renderer.initChunkData(chunk.get());
+    mChunks[x][z] = new MapChunk(this, &theFile, mBigAlpha, _mode, _context);
+    _renderer.initChunkData(mChunks[x][z]);
   }
 
   theFile.close();
@@ -396,7 +404,7 @@ void MapTile::forceRecalcExtents()
   {
     for (int j = 0; j < 16; ++j)
     {
-      MapChunk* chunk = mChunks[i][j].get();
+      MapChunk* chunk = mChunks[i][j];
       chunk->recalcExtents();
       _extents[0].y = std::min(_extents[0].y, chunk->getMinHeight());
       _extents[1].y = std::max(_extents[1].y, chunk->getMaxHeight());
@@ -443,7 +451,7 @@ MapChunk* MapTile::getChunk(unsigned int x, unsigned int z)
 {
   if (x < 16 && z < 16)
   {
-    return mChunks[z][x].get();
+    return mChunks[z][x];
   }
   else
   {
@@ -461,7 +469,7 @@ std::vector<MapChunk*> MapTile::chunks_in_range (glm::vec3 const& pos, float rad
     {
       if (misc::getShortestDist (pos.x, pos.z, mChunks[ty][tx]->xbase, mChunks[ty][tx]->zbase, CHUNKSIZE) <= radius)
       {
-        chunks.emplace_back (mChunks[ty][tx].get());
+        chunks.emplace_back (mChunks[ty][tx]);
       }
     }
   }
@@ -477,7 +485,7 @@ std::vector<MapChunk*> MapTile::chunks_in_rect (glm::vec3 const& pos, float radi
   {
     for (size_t tx (0); tx < 16; ++tx)
     {
-      MapChunk* chunk = mChunks[ty][tx].get();
+      MapChunk* chunk = mChunks[ty][tx];
       glm::vec2 l_rect{pos.x - radius, pos.z - radius};
       glm::vec2 r_rect{pos.x + radius, pos.z + radius};
 
@@ -532,7 +540,7 @@ void MapTile::saveTile(World* world)
 
     if (!model)
     {
-      // todo: save elsewhere if this happens ? it shouldn't but still
+      // TODO: save elsewhere if this happens ? it shouldn't but still
       LogError << "Could not find model with uid=" << uid << " when saving " << _file_key.stringRepr() << std::endl;
     }
     else
@@ -907,7 +915,7 @@ void MapTile::CropWater()
   {
     for (int x = 0; x < 16; ++x)
     {
-      Water.CropMiniChunk(x, z, mChunks[z][x].get());
+      Water.CropMiniChunk(x, z, mChunks[z][x]);
     }
   }
 }
@@ -1043,7 +1051,9 @@ void MapTile::initEmptyChunks()
 {
   for (int nextChunk = 0; nextChunk < 256; ++nextChunk)
   {
-    mChunks[nextChunk / 16][nextChunk % 16] = std::make_unique<MapChunk> (this, nullptr, mBigAlpha, _mode, _context, true, nextChunk);
+    if (mChunks[nextChunk / 16][nextChunk % 16])
+      delete mChunks[nextChunk / 16][nextChunk % 16];
+    mChunks[nextChunk / 16][nextChunk % 16] = new MapChunk(this, nullptr, mBigAlpha, _mode, _context, true, nextChunk);
   }
 }
 
@@ -1424,9 +1434,6 @@ void MapTile::setVertexColorImage(QImage const& image, int mode)
     }
   }
 }
-
-
-
 
 void MapTile::recalcExtents()
 {

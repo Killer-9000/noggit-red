@@ -1,7 +1,7 @@
 #ifndef NOGGIT_COMPONENT_BUILD_MAP_LIST_HPP
 #define NOGGIT_COMPONENT_BUILD_MAP_LIST_HPP
 
-#include <noggit/ui/tools/NodeEditor/Nodes/Data/Image/ImageMaskRandomPointsNode.hpp>
+#include <QPoint>
 
 namespace Noggit::Ui::Windows
 {

@@ -1,5 +1,5 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 330 core
+#version 450 core
 
 in mat4 transform;
 in vec4 position;

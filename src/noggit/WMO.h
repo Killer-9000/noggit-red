@@ -164,7 +164,7 @@ private:
 
   WMO *wmo;
   wmo_group_header header;
-  ::glm::vec3 center;
+  glm::vec3 center;
   float rad;
   int32_t num;
   int32_t fog;
@@ -173,8 +173,8 @@ private:
 
   std::vector<wmo_batch> _batches;
 
-  std::vector<::glm::vec3> _vertices;
-  std::vector<::glm::vec3> _normals;
+  std::vector<glm::vec3> _vertices;
+  std::vector<glm::vec3> _normals;
   std::vector<glm::vec2> _texcoords;
   std::vector<glm::vec2> _texcoords_2;
   std::vector<glm::vec4> _vertex_colors;

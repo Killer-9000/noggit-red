@@ -1,5 +1,5 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 410 core
+#version 450 core
 
 layout (std140) uniform lighting
 {
@@ -89,52 +89,9 @@ vec3 random_color(float areaID)
 
 vec4 get_tex_color(vec2 tex_coord, int tex_sampler, int array_index)
 {
-  if (tex_sampler == 0)
-  {
-    return texture(textures[0], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 1)
-  {
-    return texture(textures[1], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 2)
-  {
-    return texture(textures[2], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 3)
-  {
-    return texture(textures[3], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 4)
-  {
-    return texture(textures[4], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 5)
-  {
-    return texture(textures[5], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 6)
-  {
-    return texture(textures[6], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 7)
-  {
-    return texture(textures[7], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 8)
-  {
-    return texture(textures[8], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 9)
-  {
-    return texture(textures[9], vec3(tex_coord, array_index)).rgba;
-  }
-  else if (tex_sampler == 10)
-  {
-    return texture(textures[10], vec3(tex_coord, array_index)).rgba;
-  }
-
-  return vec4(0);
+    if (tex_sampler >= 0 && tex_sampler < 11)
+        return texture(textures[tex_sampler], vec3(tex_coord, array_index)).rgba;
+    return vec4(0);
 
 
   /*

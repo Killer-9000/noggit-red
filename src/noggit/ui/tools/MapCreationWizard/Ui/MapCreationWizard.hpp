@@ -86,7 +86,7 @@ namespace Noggit
       ~MapCreationWizard();
 
       void wheelEvent(QWheelEvent *event) override;
-      void destroyFakeWorld() { if(_world) delete _world; _world = nullptr; _minimap_widget->world (nullptr); };
+      void destroyFakeWorld() { _minimap_widget->world (nullptr); };
 
     signals:
       void map_dbc_updated();
@@ -131,7 +131,7 @@ namespace Noggit
 
       QMetaObject::Connection _connection;
 
-      void selectMap(int map_id);
+      void selectMap(World*, int map_id);
 
       void saveCurrentEntry();
       void discardChanges();

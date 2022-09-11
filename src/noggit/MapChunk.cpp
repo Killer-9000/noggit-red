@@ -14,7 +14,6 @@
 #include <noggit/ActionManager.hpp>
 #include <noggit/Action.hpp>
 #include <opengl/scoped.hpp>
-#include <external/tracy/Tracy.hpp>
 #include <glm/glm.hpp>
 #include <ClientFile.hpp>
 
@@ -418,8 +417,6 @@ void MapChunk::draw ( math::frustum const& frustum
                     , std::array<int, 4>& textures_bound
                     )
 {
-  ZoneScopedN("MapChunk::draw()");
-
 /*
   bool cantPaint = show_unpaintable_chunks
                     && draw_paintability_overlay
@@ -427,8 +424,6 @@ void MapChunk::draw ( math::frustum const& frustum
                     && !canPaintTexture(*Noggit::Ui::selected_texture::get());
 
   {
-    ZoneScopedN("MapChunk::draw() : Binding textures");
-
     if (texture_set->num())
     {
 
@@ -451,8 +446,6 @@ void MapChunk::draw ( math::frustum const& frustum
   }
 
   {
-    ZoneScopedN("MapChunk::draw() : Setting uniforms");
-
     mcnk_shader.uniform("layer_count", (int)texture_set->num());
     mcnk_shader.uniform("cant_paint", (int)cantPaint);
 
@@ -466,21 +459,12 @@ void MapChunk::draw ( math::frustum const& frustum
       mcnk_shader.uniform("areaid_color", (math::vector_4d)area_id_colors[areaID]);
     }
   }
-
   {
-    ZoneScopedN("MapChunk::draw() : VAO/Buffer bindings");
-
-
-  }
-
-  {
-    ZoneScopedN("MapChunk::draw() : Draw call");
     gl.drawElements(GL_TRIANGLES, _lod_level_indice_count, GL_UNSIGNED_SHORT, nullptr);
   }
 
   {
-    ZoneScopedN("MapChunk::draw() : Defaulting tex anim uniforms");
-
+    gl.drawElements(GL_TRIANGLES, _lod_level_indice_count, GL_UNSIGNED_SHORT, nullptr);
     for (int i = 0; i < texture_set->num(); ++i)
     {
       if (texture_set->is_animated(i))
@@ -783,7 +767,7 @@ void MapChunk::recalcNorms()
 
 void MapChunk::updateNormalsData()
 {
-  //gl.texSubImage2D(GL_TEXTURE_2D, 0, 0, px * 16 + py, mapbufsize, 1, GL_RGB, GL_FLOAT, mNormals);
+  // gl.texSubImage2D(GL_TEXTURE_2D, 0, 0, px * 16 + py, mapbufsize, 1, GL_RGB, GL_FLOAT, mNormals);
 }
 
 bool MapChunk::changeTerrain(glm::vec3 const& pos, float change, float radius, int BrushType, float inner_radius)
@@ -954,11 +938,10 @@ bool MapChunk::stampMCCV(glm::vec3 const& pos, glm::vec4 const& color, float cha
   return changed;
 }
 
-void MapChunk::update_vertex_colors()
+void MapChunk::update_vertex_colors(GLuint texture)
 {
   if (_chunk_update_flags & ChunkUpdateFlags::MCCV)
-
-    gl.texSubImage2D(GL_TEXTURE_2D, 0, 0, px * 16 + py, mapbufsize, 1, GL_RGB, GL_FLOAT, mccv);
+    gl.namedTextureSubImage2DEXT(texture, 0, 0, px * 16 + py, mapbufsize, 1, GL_RGB, GL_FLOAT, mccv);
 }
 
 glm::vec3 MapChunk::pickMCCV(glm::vec3 const& pos)
@@ -1295,10 +1278,10 @@ bool MapChunk::canPaintTexture(scoped_blp_texture_reference texture)
   return texture_set->canPaintTexture(texture);
 }
 
-void MapChunk::update_shadows()
+void MapChunk::update_shadows(GLuint texture)
 {
   if (_chunk_update_flags & ChunkUpdateFlags::SHADOW)
-    gl.texSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, px * 16 + py, 64, 64, 1, GL_RED, GL_UNSIGNED_BYTE, _shadow_map);
+    gl.namedTextureSubImage3DEXT(texture, 0, 0, 0, px * 16 + py, 64, 64, 1, GL_RED, GL_UNSIGNED_BYTE, _shadow_map);
 }
 
 void MapChunk::clear_shadows()

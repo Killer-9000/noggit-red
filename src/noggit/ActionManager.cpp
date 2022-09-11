@@ -13,7 +13,7 @@ std::deque<Action*>* ActionManager::getActionStack()
 
 Action* ActionManager::getCurrentAction() const
 {
-  return _cur_action;
+  return _curAction;
 }
 
 void ActionManager::setCurrentAction(unsigned index)
@@ -49,9 +49,7 @@ unsigned ActionManager::limit() const
 void ActionManager::purge()
 {
   for (auto& action : _action_stack)
-  {
     delete action;
-  }
   _action_stack.clear();
   _undo_index = 0;
   emit purged();
@@ -61,8 +59,8 @@ Action* ActionManager::beginAction(MapView* map_view
                                    , int flags
                                    , int modality_controls)
 {
-  if (_cur_action)
-    return _cur_action;
+  if (_curAction)
+    return _curAction;
 
   if (!(flags & eDO_NOT_WRITE_HISTORY))
   {
@@ -94,7 +92,7 @@ Action* ActionManager::beginAction(MapView* map_view
   action->setFlags(flags);
   action->setModalityControllers(modality_controls);
 
-  _cur_action = action;
+  _curAction = action;
 
   emit onActionBegin(action);
 
@@ -103,50 +101,44 @@ Action* ActionManager::beginAction(MapView* map_view
 
 void ActionManager::endAction()
 {
-  assert(_cur_action && "ActionStack Error: endAction() called with no action running.");
+  assert(_curAction && "ActionStack Error: endAction() called with no action running.");
 
-  _cur_action->finish();
-  if (!(_cur_action->getFlags() & eDO_NOT_WRITE_HISTORY))
-  {
-    emit addedAction(_cur_action);
-  }
+  _curAction->finish();
+  if (!(_curAction->getFlags() & eDO_NOT_WRITE_HISTORY))
+    emit addedAction(_curAction);
   else
-  {
     _action_stack.pop_back();
-  }
 
-  emit onActionEnd(_cur_action);
-  _cur_action = nullptr;
+  emit onActionEnd(_curAction);
+  _curAction = nullptr;
   emit currentActionChanged(_undo_index);
 }
 
 void ActionManager::endActionOnModalityMismatch(unsigned modality_controls)
 {
-  if (!_cur_action)
+  if (!_curAction)
     return;
 
-  if (!_cur_action->getModalityControllers())
+  if (!_curAction->getModalityControllers())
     return;
 
-  if ((modality_controls & _cur_action->getModalityControllers()) != _cur_action->getModalityControllers())
+  if ((modality_controls & _curAction->getModalityControllers()) != _curAction->getModalityControllers())
   {
-    _cur_action->finish();
-    if (!(_cur_action->getFlags() & eDO_NOT_WRITE_HISTORY))
-    {
-      emit addedAction(_cur_action);
-    }
+    _curAction->finish();
+    if (!(_curAction->getFlags() & eDO_NOT_WRITE_HISTORY))
+      emit addedAction(_curAction);
     else
-    {
       _action_stack.pop_back();
-    }
-    _cur_action = nullptr;
+
+    emit onActionEnd(_curAction);
+    _curAction = nullptr;
     emit currentActionChanged(_undo_index);
   }
 }
 
 void ActionManager::undo()
 {
-  assert(!_cur_action && "ActionStack Error: undo initiated while action is running.");
+  assert(!_curAction && "ActionStack Error: undo initiated while action is running.");
 
   if (_action_stack.empty())
     return;
@@ -156,8 +148,7 @@ void ActionManager::undo()
   if (index < 0)
     return;
 
-  Action* action = _action_stack.at(index);
-  action->undo();
+  _action_stack[index]->undo();
 
   _undo_index++;
   emit currentActionChanged(_undo_index);
@@ -165,7 +156,7 @@ void ActionManager::undo()
 
 void ActionManager::redo()
 {
-  assert(!_cur_action && "ActionStack Error: redo initiated while action is running.");
+  assert(!_curAction && "ActionStack Error: redo initiated while action is running.");
 
   if (_action_stack.empty())
     return;
@@ -175,8 +166,7 @@ void ActionManager::redo()
 
   unsigned index = _action_stack.size() - _undo_index;
 
-  Action* action = _action_stack.at(index);
-  action->undo(true);
+  _action_stack[index]->undo(true);
 
   _undo_index--;
   emit currentActionChanged(_undo_index);
@@ -185,9 +175,7 @@ void ActionManager::redo()
 ActionManager::~ActionManager()
 {
   for (auto& action : _action_stack)
-  {
     delete action;
-  }
 
   _action_stack.clear();
 }

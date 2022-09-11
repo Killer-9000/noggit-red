@@ -1,8 +1,6 @@
 #include "TreeManager.hpp"
 
-
 using namespace Noggit::Ui::Tools::AssetBrowser::Ui::Model;
-
 
 QStandardItem* TreeManager::addItem(QString path)
 {
@@ -23,7 +21,8 @@ QStandardItem* TreeManager::addItem(QString path)
 
     if (!child)
     {
-      item->appendRow((child = new QStandardItem(elt)));
+      child = new QStandardItem(elt);
+      item->appendRow(child);
       child->setData(QVariant(path_remainder), Qt::UserRole);
       child->setEditable(false);
       child->setCheckable(false);

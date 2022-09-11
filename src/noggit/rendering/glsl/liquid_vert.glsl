@@ -1,5 +1,5 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 410 core
+#version 450 core
 
 const float TILESIZE = 533.33333f;
 const float CHUNKSIZE = ((TILESIZE) / 16.0f);

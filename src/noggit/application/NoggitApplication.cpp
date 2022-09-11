@@ -1,5 +1,11 @@
 #include <noggit/application/NoggitApplication.hpp>
+#include <noggit/application/Configuration/NoggitApplicationConfigurationReader.hpp>
+#include <noggit/application/Configuration/NoggitApplicationConfigurationWriter.hpp>
 #include <noggit/project/ApplicationProject.h>
+#include <util/exception_to_string.hpp>
+#include "revision.h"
+
+#include <QtOpenGL/QtOpenGL>
 
 namespace Noggit::Application
 {
@@ -83,7 +89,7 @@ namespace Noggit::Application
 
 	  QSurfaceFormat format;
 	  format.setRenderableType(QSurfaceFormat::OpenGL);
-	  format.setVersion(4, 1);
+	  format.setVersion(4, 5);
 	  format.setProfile(QSurfaceFormat::CoreProfile);
 	  format.setSwapBehavior(applicationConfiguration.GraphicsConfiguration.SwapChainDepth);
 	  format.setSwapInterval(applicationConfiguration.GraphicsConfiguration.SwapChainInternal);
@@ -91,14 +97,10 @@ namespace Noggit::Application
 	  format.setSamples(applicationConfiguration.GraphicsConfiguration.SamplesCount);
 
 	  QSurfaceFormat::setDefaultFormat(format);
-	  QOpenGLContext context;
-	  context.create();
-
-	  QOffscreenSurface surface;
-	  surface.create();
-
+	  QOpenGLContext context; context.create();
+	  QOffscreenSurface surface; surface.create();
 	  context.makeCurrent(&surface);
-
+    
 	  OpenGL::context::scoped_setter const _(::gl, &context);
 
 	  LogDebug << "GL: Version: " << gl.getString(GL_VERSION) << std::endl;

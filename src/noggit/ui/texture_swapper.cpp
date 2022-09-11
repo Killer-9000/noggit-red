@@ -36,6 +36,7 @@ namespace Noggit
 
       QPushButton* select = new QPushButton("Select", this);
       QPushButton* swap_adt = new QPushButton("Swap ADT", this);
+      swap_adt->setDisabled(true);
 
       layout->addRow(new QLabel("Texture to swap"));
       layout->addRow(_texture_to_swap_display);
@@ -68,9 +69,7 @@ namespace Noggit
         OpenGL::context::scoped_setter const _ (::gl, map_view->context());
         _texture_to_swap = selected_texture::get();
         if (_texture_to_swap)
-        {
           _texture_to_swap_display->set_texture(_texture_to_swap.value()->file_key().filepath());
-        }
       });
 
       connect(swap_adt, &QPushButton::clicked, [this, camera_pos, map_view]() {

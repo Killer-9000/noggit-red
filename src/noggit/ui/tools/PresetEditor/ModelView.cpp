@@ -100,7 +100,6 @@ void ModelViewer::paintGL()
 
     ImGui::End();
     ImGui::Render();
-
   }
 }
 

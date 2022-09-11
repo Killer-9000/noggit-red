@@ -1,22 +1,24 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
-#ifndef NOGGIT_ACTION_HPP
-#define NOGGIT_ACTION_HPP
+#pragma once
 
-#include <vector>
-#include <array>
-#include <string>
-#include <set>
-#include <algorithm>
-#include <external/tsl/robin_map.h>
-#include <optional>
 #include <noggit/TextureManager.h>
 #include <noggit/texture_set.hpp>
 #include <noggit/SceneObject.hpp>
 #include <noggit/liquid_layer.hpp>
 #include <noggit/ChunkWater.hpp>
-#include <QObject>
+
 #include <ClientData.hpp>
+#include <external/tsl/robin_map.h>
+
+#include <QObject>
+
+#include <algorithm>
+#include <array>
+#include <optional>
+#include <set>
+#include <string>
+#include <vector>
 
 class MapView;
 class MapChunk;
@@ -177,5 +179,3 @@ namespace Noggit
 
     };
 }
-
-#endif //NOGGIT_ACTION_HPP

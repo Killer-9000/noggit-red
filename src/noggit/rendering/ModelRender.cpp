@@ -3,7 +3,6 @@
 #include "ModelRender.hpp"
 #include <noggit/Model.h>
 #include <noggit/ModelInstance.h>
-#include <external/tracy/Tracy.hpp>
 #include <math/bounding_box.hpp>
 #include <noggit/Misc.h>
 
@@ -31,29 +30,29 @@ void ModelRender::upload()
 
   if (_model->animBones)
   {
-    gl.genTextures(1, &_bone_matrices_buf_tex);
+    gl.createTexturesEXT(GL_TEXTURE_BUFFER, 1, &_bone_matrices_buf_tex);
 
-    gl.bindTexture(GL_TEXTURE_BUFFER, _bone_matrices_buf_tex);
-    OpenGL::Scoped::buffer_binder<GL_TEXTURE_BUFFER> const binder(_bone_matrices_buffer);
-    gl.bufferData(GL_TEXTURE_BUFFER, _model->bone_matrices.size() * sizeof(glm::mat4x4), nullptr, GL_STREAM_DRAW);
-    gl.texBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, _bone_matrices_buffer);
+    //gl.bindTexture(GL_TEXTURE_BUFFER, _bone_matrices_buf_tex);
+    //OpenGL::Scoped::buffer_binder<GL_TEXTURE_BUFFER> const binder(_bone_matrices_buffer);
+    gl.namedBufferDataEXT(_bone_matrices_buffer, _model->bone_matrices.size() * sizeof(glm::mat4x4), nullptr, GL_STREAM_DRAW);
+    gl.namedTextureBufferEXT(_bone_matrices_buf_tex, GL_RGBA32F, _bone_matrices_buffer);
   }
 
   {
-    OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const binder(_vertices_buffer);
-    gl.bufferData(GL_ARRAY_BUFFER, _model->_vertices.size() * sizeof(ModelVertex), _model->_vertices.data(), GL_STATIC_DRAW);
+    //OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const binder(_vertices_buffer);
+    gl.namedBufferDataEXT(_vertices_buffer, _model->_vertices.size() * sizeof(ModelVertex), _model->_vertices.data(), GL_STATIC_DRAW);
   }
 
   {
-    OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const binder (_box_vbo);
-    gl.bufferData (GL_ARRAY_BUFFER, _vertex_box_points.size() * sizeof (glm::vec3), _vertex_box_points.data(), GL_STATIC_DRAW);
+    //OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const binder (_box_vbo);
+    gl.namedBufferDataEXT(_box_vbo, _vertex_box_points.size() * sizeof (glm::vec3), _vertex_box_points.data(), GL_STATIC_DRAW);
   }
 
-  OpenGL::Scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> indices_binder(_indices_buffer);
-  gl.bufferData (GL_ELEMENT_ARRAY_BUFFER, _model->_indices.size() * sizeof(uint16_t), _model->_indices.data(), GL_STATIC_DRAW);
+  //OpenGL::Scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> indices_binder(_indices_buffer);
+  gl.namedBufferDataEXT(_indices_buffer, _model->_indices.size() * sizeof(uint16_t), _model->_indices.data(), GL_STATIC_DRAW);
 
-  OpenGL::Scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> box_indices_binder(_box_indices_buffer);
-  gl.bufferData (GL_ELEMENT_ARRAY_BUFFER, _box_indices.size() * sizeof(uint16_t), _box_indices.data(), GL_STATIC_DRAW);
+  //OpenGL::Scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> box_indices_binder(_box_indices_buffer);
+  gl.namedBufferDataEXT(_box_indices_buffer, _box_indices.size() * sizeof(uint16_t), _box_indices.data(), GL_STATIC_DRAW);
 
   _model->_textureFilenames.clear();
 
@@ -123,11 +122,11 @@ void ModelRender::draw(glm::mat4x4 const& model_view
   {
     OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const binder(_vertices_buffer);
     m2_shader.attrib("pos", 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), 0);
-    m2_shader.attrib("bones_weight",  4, GL_UNSIGNED_BYTE,  GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (::glm::vec3)));
-    m2_shader.attrib("bones_indices", 4, GL_UNSIGNED_BYTE,  GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (::glm::vec3) + 4));
-    m2_shader.attrib("normal", 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), reinterpret_cast<void*> (sizeof(::glm::vec3) + 8));
-    m2_shader.attrib("texcoord1", 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), reinterpret_cast<void*> (sizeof(::glm::vec3) * 2 + 8));
-    m2_shader.attrib("texcoord2", 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), reinterpret_cast<void*> (sizeof(::glm::vec3) * 2 + 8 + sizeof(glm::vec2)));
+    m2_shader.attrib("bones_weight",  4, GL_UNSIGNED_BYTE,  GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (glm::vec3)));
+    m2_shader.attrib("bones_indices", 4, GL_UNSIGNED_BYTE,  GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (glm::vec3) + 4));
+    m2_shader.attrib("normal", 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), reinterpret_cast<void*> (sizeof(glm::vec3) + 8));
+    m2_shader.attrib("texcoord1", 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), reinterpret_cast<void*> (sizeof(glm::vec3) * 2 + 8));
+    m2_shader.attrib("texcoord2", 2, GL_FLOAT, GL_FALSE, sizeof(ModelVertex), reinterpret_cast<void*> (sizeof(glm::vec3) * 2 + 8 + sizeof(glm::vec2)));
   }
 
   OpenGL::Scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> indices_binder(_indices_buffer);
@@ -160,35 +159,18 @@ void ModelRender::draw(glm::mat4x4 const& model_view
     , bool no_cull
 )
 {
-  ZoneScopedN(NOGGIT_CURRENT_FUNCTION);
+  if (!_model->finishedLoading() || _model->loading_failed())
+    return;
 
-  {
-    ZoneScopedN("Model::draw() : uploads")
-
-    if (!_model->finishedLoading() || _model->loading_failed())
-    {
-      return;
-    }
-
-    if (!_uploaded)
-    {
-      upload();
-    }
-
-    if (!_vao_setup)
-    {
-      setupVAO(m2_shader);
-    }
-  }
+  if (!_uploaded)
+    upload();
+  if (!_vao_setup)
+    setupVAO(m2_shader);
 
   if (instances.empty())
-  {
     return;
-  }
 
   {
-    ZoneScopedN("Model::draw() : drawing")
-
     if (_model->animated && (!_model->animcalc || _model->_per_instance_animation))
     {
       _model->animate(model_view, 0, animtime);
@@ -223,9 +205,7 @@ void ModelRender::draw(glm::mat4x4 const& model_view
       m2_shader.uniform("anim_bones", true);
     }
     else
-    {
       m2_shader.uniform("anim_bones", false);
-    }
 
     OpenGL::Scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> indices_binder(_indices_buffer);
 
@@ -289,16 +269,16 @@ void ModelRender::setupVAO(OpenGL::Scoped::use_program& m2_shader)
   {
     OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const binder (_vertices_buffer);
     m2_shader.attrib("pos",           3, GL_FLOAT, GL_FALSE, sizeof (ModelVertex), 0);
-    m2_shader.attribi("bones_weight", 4, GL_UNSIGNED_BYTE,   sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (::glm::vec3)));
-    m2_shader.attribi("bones_indices",4, GL_UNSIGNED_BYTE,  sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (::glm::vec3) + 4));
-    m2_shader.attrib("normal",        3, GL_FLOAT, GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (::glm::vec3) + 8));
-    m2_shader.attrib("texcoord1",     2, GL_FLOAT, GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (::glm::vec3) * 2 + 8));
-    m2_shader.attrib("texcoord2",     2, GL_FLOAT, GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (::glm::vec3) * 2 + 8 + sizeof(glm::vec2)));
+    m2_shader.attribi("bones_weight", 4, GL_UNSIGNED_BYTE,   sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (glm::vec3)));
+    m2_shader.attribi("bones_indices",4, GL_UNSIGNED_BYTE,  sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (glm::vec3) + 4));
+    m2_shader.attrib("normal",        3, GL_FLOAT, GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (glm::vec3) + 8));
+    m2_shader.attrib("texcoord1",     2, GL_FLOAT, GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (glm::vec3) * 2 + 8));
+    m2_shader.attrib("texcoord2",     2, GL_FLOAT, GL_FALSE, sizeof (ModelVertex), reinterpret_cast<void*> (sizeof (glm::vec3) * 2 + 8 + sizeof(glm::vec2)));
   }
 
   {
     OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const transform_binder (_transform_buffer);
-    gl.bufferData(GL_ARRAY_BUFFER, 10 * sizeof(::glm::mat4x4), nullptr, GL_DYNAMIC_DRAW);
+    gl.bufferData(GL_ARRAY_BUFFER, 10 * sizeof(glm::mat4x4), nullptr, GL_DYNAMIC_DRAW);
     m2_shader.attrib("transform", 0, 1);
   }
 
@@ -754,10 +734,8 @@ void ModelRender::initRenderPasses(ModelView const* view, ModelTexUnit const* te
 
 void ModelRender::updateBoneMatrices()
 {
-  {
-    OpenGL::Scoped::buffer_binder<GL_TEXTURE_BUFFER> const binder (_bone_matrices_buffer);
-    gl.bufferSubData(GL_TEXTURE_BUFFER, 0, _model->bone_matrices.size() * sizeof(glm::mat4x4), _model->bone_matrices.data());
-  }
+  //OpenGL::Scoped::buffer_binder<GL_TEXTURE_BUFFER> const binder (_bone_matrices_buffer);
+  gl.namedBufferSubDataEXT(_bone_matrices_buffer, 0, _model->bone_matrices);
 }
 
 // ModelRenderPass
@@ -786,7 +764,7 @@ bool ModelRenderPass::prepareDraw(OpenGL::Scoped::use_program& m2_shader, Model 
   // emissive colors
   if (color_index != -1 && m->_colors[color_index].color.uses(0))
   {
-    ::glm::vec3 c (m->_colors[color_index].color.getValue (0, m->_anim_time, m->_global_animtime));
+    glm::vec3 c (m->_colors[color_index].color.getValue (0, m->_anim_time, m->_global_animtime));
     if (m->_colors[color_index].opacity.uses (m->_current_anim_seq))
     {
       mesh_color.w = m->_colors[color_index].opacity.getValue (m->_current_anim_seq, m->_anim_time, m->_global_animtime);
@@ -866,13 +844,9 @@ bool ModelRenderPass::prepareDraw(OpenGL::Scoped::use_program& m2_shader, Model 
   if (model_render_state.z_buffered != renderflag.flags.z_buffered)
   {
     if (renderflag.flags.z_buffered)
-    {
       gl.depthMask(GL_FALSE);
-    }
     else
-    {
       gl.depthMask(GL_TRUE);
-    }
 
     model_render_state.z_buffered = renderflag.flags.z_buffered;
   }
@@ -965,8 +939,7 @@ void ModelRenderPass::bindTexture(size_t index, Model* m, OpenGL::M2RenderState&
     GLuint tex_array = texture->texture_array();
     int tex_index = texture->array_index();
 
-    gl.activeTexture(GL_TEXTURE0 + index + 1);
-    gl.bindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
+    gl.bindTextureUnitEXT(1 + index, tex_array);
     /*
     if (model_render_state.tex_arrays[index] != tex_array)
     {
@@ -982,7 +955,7 @@ void ModelRenderPass::bindTexture(size_t index, Model* m, OpenGL::M2RenderState&
       model_render_state.tex_indices[index] = tex_index;
     }
 
-          */
+    */
 
     m2_shader.uniform(index ? "tex2_index" : "tex1_index", tex_index);
     model_render_state.tex_indices[index] = tex_index;
@@ -990,13 +963,13 @@ void ModelRenderPass::bindTexture(size_t index, Model* m, OpenGL::M2RenderState&
   }
   else
   {
+    // TODO: Exception caused from out-of-bounds in asset browser.
     auto& texture = m->_replaceTextures.at (m->_specialTextures[tex]);
     texture->upload();
     GLuint tex_array = texture->texture_array();
     int tex_index = texture->array_index();
 
-    gl.activeTexture(GL_TEXTURE0 + index + 1);
-    gl.bindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
+    gl.bindTextureUnitEXT(1 + index, tex_array);
 
     /*
     if (model_render_state.tex_arrays[index] != tex_array)

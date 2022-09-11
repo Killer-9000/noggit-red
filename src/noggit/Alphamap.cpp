@@ -2,7 +2,6 @@
 
 #include <noggit/Alphamap.hpp>
 #include <opengl/context.hpp>
-#include <opengl/context.inl>
 #include <ClientFile.hpp>
 
 #include <optional>

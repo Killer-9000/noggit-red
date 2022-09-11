@@ -77,6 +77,8 @@ namespace Noggit
 
       float brushRadius() const { return _radius; }
 
+      void replace_selection(std::vector<selection_type> new_selection);
+
       model_import *modelImport;
       rotation_editor* rotationEditor;
       helper_models* helper_models_widget;
@@ -101,7 +103,6 @@ namespace Noggit
       std::vector<selection_type> selected;
       std::vector<selection_type> _model_instance_created;
       
-      void replace_selection(std::vector<selection_type> new_selection);
 
       void showImportModels();
       void SaveObjecttoTXT (World*);

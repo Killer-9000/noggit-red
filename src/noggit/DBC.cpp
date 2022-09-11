@@ -33,8 +33,6 @@ void OpenDBs(std::shared_ptr<BlizzardArchive::ClientData> clientData)
   gLiquidTypeDB.open(clientData);
 }
 
-
-
 std::string AreaDB::getAreaName(int pAreaID)
 {
   if (!pAreaID || pAreaID == -1)
@@ -72,7 +70,7 @@ std::string AreaDB::getAreaName(int pAreaID)
 
 std::uint32_t AreaDB::get_area_parent(int area_id)
 {
-  // todo: differentiate between no parent and error ?
+  // TODO: differentiate between no parent and error ?
   if (!area_id || area_id == -1)
   {
     return 0;

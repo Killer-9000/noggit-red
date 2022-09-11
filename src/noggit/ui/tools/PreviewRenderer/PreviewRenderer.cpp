@@ -6,17 +6,17 @@
 #include <noggit/tool_enums.hpp>
 #include <noggit/AsyncLoader.h>
 
+#include <QColor>
+#include <QMatrix4x4>
+#include <QSettings>
+#include <QVector3D>
+
 #include <vector>
 #include <cmath>
 #include <stdexcept>
 #include <limits>
 #include <thread>
 #include <chrono>
-
-#include <QSettings>
-#include <QColor>
-#include <QMatrix4x4>
-#include <QVector3D>
 
 
 using namespace Noggit::Ui::Tools;
@@ -48,26 +48,43 @@ PreviewRenderer::PreviewRenderer(int width, int height, Noggit::NoggitRenderCont
   _light_dir = glm::vec3(0.0f, 1.0f, 0.0f);
 }
 
-void PreviewRenderer::setModel(std::string const &filename)
+void PreviewRenderer::setModel(const std::string& filename)
 {
-  _filename = filename;
-  _model_instances.clear();
-  _wmo_instances.clear();
+  clearModels();
+  addModel(filename);
+}
+
+void PreviewRenderer::setModelOffscreen(const std::string& filename)
+{
+  OpenGL::context::save_current_context const context_save (::gl);
+  _offscreen_context.makeCurrent(&_offscreen_surface);
+  OpenGL::context::scoped_setter const context_set (::gl, &_offscreen_context);
+
+  setModel(filename);
+}
+
+void PreviewRenderer::addModel(const std::string& filename, glm::vec3 offset, glm::vec3 rotation, float scale)
+{
+  _filenames.emplace_back(filename);
 
   // add new model instance
-  QString q_filename = QString(filename.c_str());
+  QString q_filename = QString(filename.data());
 
   if (q_filename.endsWith(".wmo"))
   {
     auto& instance = _wmo_instances.emplace_back(filename, _context);
     instance.wmo->wait_until_loaded();
+    instance.pos = offset;
+    instance.dir = rotation;
     instance.recalcExtents();
-
   }
   else if (q_filename.endsWith(".m2"))
   {
     auto& instance = _model_instances.emplace_back(filename, _context);
     instance.model->wait_until_loaded();
+    instance.pos = offset;
+    instance.dir = rotation;
+    instance.scale = scale;
     instance.recalcExtents();
   }
   else
@@ -79,36 +96,35 @@ void PreviewRenderer::setModel(std::string const &filename)
 
   auto diffuse_color = _settings->value("assetBrowser/diffuse_light",
     QVariant::fromValue(QColor::fromRgbF(1.0f, 0.532352924f, 0.0f))).value<QColor>();
-  _diffuse_light = {static_cast<float>(diffuse_color.redF()),
+  _diffuse_light = { static_cast<float>(diffuse_color.redF()),
                     static_cast<float>(diffuse_color.greenF()),
-                    static_cast<float>(diffuse_color.blueF())};
+                    static_cast<float>(diffuse_color.blueF()) };
 
- auto ambient_color = _settings->value("assetBrowser/ambient_light",
-     QVariant::fromValue(QColor::fromRgbF(0.407770514f, 0.508424163f, 0.602650642f))).value<QColor>();
+  auto ambient_color = _settings->value("assetBrowser/ambient_light",
+    QVariant::fromValue(QColor::fromRgbF(0.407770514f, 0.508424163f, 0.602650642f))).value<QColor>();
 
- _ambient_light = {static_cast<float>(ambient_color.redF()),
-                   static_cast<float>(ambient_color.greenF()),
-                   static_cast<float>(ambient_color.blueF())};
+  _ambient_light = { static_cast<float>(ambient_color.redF()),
+                    static_cast<float>(ambient_color.greenF()),
+                    static_cast<float>(ambient_color.blueF()) };
 
   auto background_color = _settings->value("assetBrowser/background_color",
-     QVariant::fromValue(QColor(127, 127, 127))).value<QColor>();
+    QVariant::fromValue(QColor(127, 127, 127))).value<QColor>();
 
-  _background_color = {static_cast<float>(background_color.redF()),
+  _background_color = { static_cast<float>(background_color.redF()),
                        static_cast<float>(background_color.greenF()),
-                       static_cast<float>(background_color.blueF())};
+                       static_cast<float>(background_color.blueF()) };
 
   resetCamera();
 }
 
-void PreviewRenderer::setModelOffscreen(std::string const& filename)
+void PreviewRenderer::addModelOffscreen(const std::string& filename, glm::vec3 offset, glm::vec3 rotation, float scale)
 {
-  OpenGL::context::save_current_context const context_save (::gl);
+  OpenGL::context::save_current_context const context_save(::gl);
   _offscreen_context.makeCurrent(&_offscreen_surface);
-  OpenGL::context::scoped_setter const context_set (::gl, &_offscreen_context);
+  OpenGL::context::scoped_setter const context_set(::gl, &_offscreen_context);
 
-  setModel(filename);
+  addModel(filename, offset, rotation, scale);
 }
-
 
 void PreviewRenderer::resetCamera(float x, float y, float z, float roll, float yaw, float pitch)
 {
@@ -123,7 +139,6 @@ void PreviewRenderer::resetCamera(float x, float y, float z, float roll, float y
   _camera.move_forward_factor(-1.f, distance_factor);
 
 }
-
 
 void PreviewRenderer::draw()
 {
@@ -413,7 +428,13 @@ std::vector<glm::vec3> PreviewRenderer::calcSceneExtents()
 
 QPixmap* PreviewRenderer::renderToPixmap()
 {
-  std::tuple<std::string, int, int> const curEntry{_filename, _width, _height};
+  std::stringstream filenameStream;
+  for (int i = 0; i < _filenames.size(); i++)
+  {
+    if (i > 0) filenameStream << ", ";
+    filenameStream << _filenames[i];
+  }
+  std::tuple<std::string, int, int> const curEntry{ filenameStream.str(), _width, _height };
   auto it{_cache.find(curEntry)};
 
   if(it != _cache.end())
@@ -454,7 +475,7 @@ QPixmap* PreviewRenderer::renderToPixmap()
   // Clearing alpha from image
   gl.colorMask(false, false, false, true);
   gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
+  gl.clear(GL_COLOR_BUFFER_BIT);
   gl.colorMask(true, true, true, true);
 
   QPixmap result{};
@@ -462,9 +483,7 @@ QPixmap* PreviewRenderer::renderToPixmap()
   pixel_buffer.release();
 
   if (result.isNull())
-  {
-    throw std::runtime_error("failed rendering " + _filename + " to pixmap");
-  }
+    throw std::runtime_error("failed rendering " + filenameStream.str() + " to pixmap");
 
   return &(_cache[curEntry] = std::move(result));
 }
@@ -639,7 +658,8 @@ void PreviewRenderer::upload()
 
   }
 
-  setModel("world/wmo/azeroth/buildings/human_farm/farm.wmo");
+  //setModel("world/wmo/azeroth/buildings/human_farm/farm.wmo");
+  setModel("world/scale/50x50.m2");
 
   auto background_color = _settings->value("assetBrowser/background_color",
     QVariant::fromValue(QColor(127, 127, 127))).value<QColor>();
@@ -679,7 +699,7 @@ void PreviewRenderer::unloadOpenglData()
   {
     OpenGL::context::save_current_context const context_save (::gl);
     _offscreen_context.makeCurrent(&_offscreen_surface);
-    OpenGL::context::scoped_setter const context_set (::gl, &_offscreen_context);
+    OpenGL::context::scoped_setter const _ (::gl, &_offscreen_context);
 
     unload();
     return;
@@ -695,7 +715,7 @@ void PreviewRenderer::unloadOpenglData()
   unload();
 }
 
-void Noggit::Ui::Tools::PreviewRenderer::updateLightingUniformBlock()
+void PreviewRenderer::updateLightingUniformBlock()
 {
 
   glm::vec4 ocean_color_light(glm::vec3(1.0f, 1.0f, 1.0f), 1.f);
@@ -718,7 +738,7 @@ void Noggit::Ui::Tools::PreviewRenderer::updateLightingUniformBlock()
   _lighting_needs_update = false;
 }
 
-void Noggit::Ui::Tools::PreviewRenderer::updateMVPUniformBlock(const glm::mat4x4& model_view, const glm::mat4x4& projection)
+void PreviewRenderer::updateMVPUniformBlock(const glm::mat4x4& model_view, const glm::mat4x4& projection)
 {
   _mvp_ubo_data.model_view = model_view;
   _mvp_ubo_data.projection = projection;

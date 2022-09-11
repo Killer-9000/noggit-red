@@ -73,9 +73,9 @@ void WMO::finishLoading ()
   f.read (&ambient_color, 4);
   f.read (&nX, 4);
   f.read (ff, 12);
-  extents[0] = ::glm::vec3 (ff[0], ff[1], ff[2]);
+  extents[0] = glm::vec3 (ff[0], ff[1], ff[2]);
   f.read (ff, 12);
-  extents[1] = ::glm::vec3 (ff[0], ff[1], ff[2]);
+  extents[1] = glm::vec3 (ff[0], ff[1], ff[2]);
   f.read(&flags, 2);
 
   f.seekRelative (2);
@@ -444,7 +444,7 @@ void WMOLight::setupOnce(GLint, glm::vec3, glm::vec3)
   //glm::vec4diffuse = glm::vec4(light_color, 1);
 
 
-  //gl.enable(light);
+  // gl.enable(light);
 }
 
 
@@ -565,8 +565,8 @@ void WMOGroup::load()
   if (wf.r2 <= 0) fog = -1; // default outdoor fog..?
   else fog = header.fogs[0];
 
-  BoundingBoxMin = ::glm::vec3 (header.box1[0], header.box1[2], -header.box1[1]);
-  BoundingBoxMax = ::glm::vec3 (header.box2[0], header.box2[2], -header.box2[1]);
+  BoundingBoxMin = glm::vec3 (header.box1[0], header.box1[2], -header.box1[1]);
+  BoundingBoxMax = glm::vec3 (header.box2[0], header.box2[2], -header.box2[1]);
 
   // - MOPY ----------------------------------------------
 
@@ -596,20 +596,20 @@ void WMOGroup::load()
   assert (fourcc == 'MOVT');
 
   // let's hope it's padded to 12 bytes, not 16...
-  ::glm::vec3 const* vertices = reinterpret_cast< ::glm::vec3 const*>(f.getPointer ());
+  glm::vec3 const* vertices = reinterpret_cast< glm::vec3 const*>(f.getPointer ());
 
-  VertexBoxMin = ::glm::vec3 (std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-  VertexBoxMax = ::glm::vec3 (std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
+  VertexBoxMin = glm::vec3 (std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+  VertexBoxMax = glm::vec3 (std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
 
   rad = 0;
 
-  _vertices.resize(size / sizeof (::glm::vec3));
+  _vertices.resize(size / sizeof (glm::vec3));
 
   for (size_t i = 0; i < _vertices.size(); ++i)
   {
     _vertices[i] = glm::vec3(vertices[i].x, vertices[i].z, -vertices[i].y);
 
-    ::glm::vec3& v = _vertices[i];
+    glm::vec3& v = _vertices[i];
 
     if (v.x < VertexBoxMin.x) VertexBoxMin.x = v.x;
     if (v.y < VertexBoxMin.y) VertexBoxMin.y = v.y;
@@ -631,14 +631,12 @@ void WMOGroup::load()
 
   assert (fourcc == 'MONR');
 
-  _normals.resize (size / sizeof (::glm::vec3));
+  _normals.resize (size / sizeof (glm::vec3));
 
   f.read (_normals.data(), size);
 
   for (auto& n : _normals)
-  {
     n = {n.x, n.z, -n.y};
-  }
 
   // - MOTV ----------------------------------------------
 
@@ -925,7 +923,7 @@ void WMOGroup::load()
   // "real" lighting?
   if (header.flags.indoor && header.flags.has_vertex_color)
   {
-    ::glm::vec3 dirmin(1, 1, 1);
+    glm::vec3 dirmin(1, 1, 1);
     float lenmin;
 
     for (auto doodad : _doodad_ref)
@@ -941,7 +939,7 @@ void WMOGroup::load()
       for (unsigned int j = 0; j < wmo->lights.size(); j++)
       {
         WMOLight& l = wmo->lights[j];
-        ::glm::vec3 dir = l.pos - mi.pos;
+        glm::vec3 dir = l.pos - mi.pos;
 
         float ll = glm::length(dir) * glm::length(dir);
         if (ll < lenmin)

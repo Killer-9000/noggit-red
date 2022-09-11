@@ -248,10 +248,10 @@ MapCreationWizard::MapCreationWizard(std::shared_ptr<Project::NoggitProject> pro
           });
 
   _connection = connect(reinterpret_cast<Noggit::Ui::Windows::NoggitWindow*>(parent),
-                        QOverload<int>::of(&Noggit::Ui::Windows::NoggitWindow::mapSelected)
-                        , [&] (int index)
+                        QOverload<World*, int>::of(&Noggit::Ui::Windows::NoggitWindow::mapSelected)
+                        , [&] (World* map, int index)
                               {
-                                selectMap(index);
+                                selectMap(map, index);
                               }
   );
 
@@ -317,19 +317,15 @@ MapCreationWizard::MapCreationWizard(std::shared_ptr<Project::NoggitProject> pro
 
 }
 
-void MapCreationWizard::selectMap(int map_id)
+void MapCreationWizard::selectMap(World* world, int map_id)
 {
+  _world = world;
   _is_new_record = false;
 
   auto table = _project->ClientDatabase->LoadTable("Map", readFileAsIMemStream);
   auto record = table.Record(map_id);
 
   _cur_map_id = map_id;
-
-  if (_world)
-  {
-    delete _world;
-  }
 
   auto directoryName = record.Columns["Directory"].Value;
   auto instanceType = record.Columns["InstanceType"].Value;
@@ -343,7 +339,7 @@ void MapCreationWizard::selectMap(int map_id)
   auto maxPlayers = record.Columns["MaxPlayers"].Value;
   auto timeOffset = record.Columns["TimeOffset"].Value;
 
-  _world = new World(directoryName, map_id, Noggit::NoggitRenderContext::MAP_VIEW);
+  //_world = new World(directoryName, map_id, Noggit::NoggitRenderContext::MAP_VIEW);
   _minimap_widget->world(_world);
 
   _directory->setText(QString::fromStdString(directoryName));
@@ -497,7 +493,7 @@ void MapCreationWizard::discardChanges()
 {
   if (!_is_new_record)
   {
-    selectMap(_cur_map_id);
+    selectMap(_world, _cur_map_id);
   }
   else
   {
@@ -516,11 +512,6 @@ void MapCreationWizard::addNewMap()
 {
   _is_new_record = true;
   _cur_map_id = gMapDB.getEmptyRecordID();
-
-  if (_world)
-  {
-    delete _world;
-  }
 
   _world = new World("New_Map", _cur_map_id, Noggit::NoggitRenderContext::MAP_VIEW, true);
   _minimap_widget->world(_world);

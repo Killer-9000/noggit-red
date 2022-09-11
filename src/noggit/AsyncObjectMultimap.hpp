@@ -1,20 +1,16 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
 #pragma once
+
 #include <noggit/AsyncLoader.h>
 #include <noggit/AsyncObject.h>
-#include <noggit/ContextObject.hpp>
-#include <noggit/Log.h>
 
-#include <ClientData.hpp>
+
 #include <Listfile.hpp>
-#include <thread>
 
-#include <functional>
-#include <map>
+
 #include <string>
 #include <unordered_map>
-#include <QOpenGLContext>
 
 struct pair_hash
 {

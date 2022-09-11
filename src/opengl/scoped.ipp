@@ -132,7 +132,7 @@ namespace OpenGL
     template<std::size_t count>
     void deferred_upload_buffers<count>::upload()
     {
-      gl.genBuffers (count, _buffers);
+      gl.createBuffersEXT (count, _buffers);
       _buffer_generated = true;
     }
 
@@ -206,37 +206,35 @@ namespace OpenGL
     }
 
     // textures
-    template<std::size_t count>
-    bool deferred_upload_textures<count>::texture_generated() const
+    template<GLenum target, std::size_t count>
+    bool deferred_upload_textures<target, count>::texture_generated() const
     {
       return _texture_generated;
     }
 
-    template<std::size_t count>
-    void deferred_upload_textures<count>::upload()
+    template<GLenum target, std::size_t count>
+    void deferred_upload_textures<target, count>::upload()
     {
-      gl.genTextures(count, _textures);
+      gl.createTexturesEXT(target, count, _textures);
       _texture_generated = true;
     }
 
-    template<std::size_t count>
-    void deferred_upload_textures<count>::unload()
+    template<GLenum target, std::size_t count>
+    void deferred_upload_textures<target, count>::unload()
     {
       gl.deleteTextures(count, _textures);
       _texture_generated = false;
     }
 
-    template<std::size_t count>
-    deferred_upload_textures<count>::~deferred_upload_textures()
+    template<GLenum target, std::size_t count>
+    deferred_upload_textures<target, count>::~deferred_upload_textures()
     {
       if (_texture_generated)
-      {
         gl.deleteTextures(count, _textures);
-      }
     }
 
-    template<std::size_t count>
-    GLuint const& deferred_upload_textures<count>::operator[] (std::size_t i) const
+    template<GLenum target, std::size_t count>
+    GLuint const& deferred_upload_textures<target, count>::operator[] (std::size_t i) const
     {
       return _textures[i];
     }

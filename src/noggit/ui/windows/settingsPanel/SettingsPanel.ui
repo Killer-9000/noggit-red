@@ -1054,6 +1054,58 @@
                   </widget>
                  </item>
                  <item row="4" column="0">
+                  <widget class="QLabel" name="label_49">
+                   <property name="minimumSize">
+                    <size>
+                     <width>200</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>AutoSave Interval</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QSpinBox" name="AutoSaveIntervalField">
+                   <property name="maximum">
+                    <double>600</double>
+                   </property>
+                   <property name="minimum">
+				    <double>0</double>
+				   </property>
+                   <property name="value">
+                    <double>120</double>
+                   </property>
+                  </widget>
+                 </item>
+					<item row="5" column="0">
+						<widget class="QLabel" name="label_50">
+							<property name="minimumSize">
+								<size>
+									<width>200</width>
+									<height>0</height>
+								</size>
+							</property>
+							<property name="text">
+								<string>AutoSave Warning</string>
+							</property>
+						</widget>
+					</item>
+					<item row="5" column="1">
+						<widget class="QSpinBox" name="AutoSaveWarningField">
+							<property name="maximum">
+								<double>600</double>
+							</property>
+							<property name="minimum">
+								<double>0</double>
+							</property>
+							<property name="value">
+								<double>10</double>
+							</property>
+						</widget>
+					</item>
+                 <item row="6" column="0">
                   <widget class="QLabel" name="label_8">
                    <property name="minimumSize">
                     <size>
@@ -1066,7 +1118,7 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="4" column="1">
+                 <item row="6" column="1">
                   <widget class="QComboBox" name="_keyboard_locale">
                    <property name="minimumSize">
                     <size>

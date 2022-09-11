@@ -1,8 +1,10 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
 #pragma once
+
+#include <math/trig.hpp>
+
 #include <glm/mat4x4.hpp>
-#include "math/trig.hpp"
 
 namespace Noggit
 {
@@ -39,7 +41,10 @@ namespace Noggit
     void reset(float x, float y, float z, float roll, float yaw, float pitch);
 
     glm::vec3 position;
-    float move_speed;
+    const float default_move_speed = 200.6f;
+    const float min_move_speed = default_move_speed / 100.f;
+    const float max_move_speed = default_move_speed * 200.f;
+    float move_speed = default_move_speed;
 
   private:
     math::degrees _roll; // this is not used currently

@@ -10,9 +10,7 @@
 
 #include <QStandardItemModel>
 #include <QItemSelectionModel>
-#include <QDir>
 #include <QSettings>
-#include <QPixmap>
 #include <QIcon>
 #include <QDialog>
 #include <QDial>
@@ -22,17 +20,13 @@ using namespace Noggit::Ui::Tools::AssetBrowser::Ui;
 using namespace Noggit::Ui;
 
 AssetBrowserWidget::AssetBrowserWidget(MapView* map_view, QWidget *parent)
-: QMainWindow(parent, Qt::Window)
+: QWidget(parent, Qt::Window | Qt::WindowStaysOnTopHint)
 , _map_view(map_view)
 {
   setWindowTitle("Asset Browser");
 
-  auto body = new QWidget(this);
   ui = new ::Ui::AssetBrowser;
-  ui->setupUi(body);
-  setCentralWidget(body);
-
-  setWindowFlags(windowFlags() | Qt::Tool | Qt::WindowStaysOnTopHint);
+  ui->setupUi(this);
 
   _model = new QStandardItemModel(this);
   _sort_model = new QSortFilterProxyModel(this);
@@ -85,27 +79,28 @@ AssetBrowserWidget::AssetBrowserWidget(MapView* map_view, QWidget *parent)
   _preview_renderer->setVisible(false);
 
   // just to initialize context, ugly-ish
-  _preview_renderer->setModelOffscreen("world/wmo/azeroth/buildings/human_farm/farm.wmo");
+  //_preview_renderer->setModelOffscreen("world/wmo/azeroth/buildings/human_farm/farm.wmo");
+  _preview_renderer->setModelOffscreen("world/scale/50x50.m2");
   _preview_renderer->renderToPixmap();
 
-  connect(ui->listfileTree->selectionModel(), &QItemSelectionModel::selectionChanged
-      ,[=] (const QItemSelection& selected, const QItemSelection& deselected)
-        {
-            for (auto index : selected.indexes())
-            {
-              auto path = index.data(Qt::UserRole).toString();
-              if (path.endsWith(".m2") || path.endsWith(".wmo"))
-              {
-                auto str_path = path.toStdString();
-                ui->viewport->setModel(str_path);
-                _map_view->getObjectEditor()->copy(str_path);
-                _selected_path = str_path;
-              }
-            }
+  //connect(ui->listfileTree->selectionModel(), &QItemSelectionModel::selectionChanged
+  //    ,[=] (const QItemSelection& selected, const QItemSelection& deselected)
+  //      {
+  //          for (const auto& index : selected.indexes())
+  //          {
+  //            auto path = index.data(Qt::UserRole).toString();
+  //            if (path.endsWith(".m2") || path.endsWith(".wmo"))
+  //            {
+  //              auto str_path = path.toStdString();
+  //              ui->viewport->setModel(str_path);
+  //              _map_view->getObjectEditor()->copy(str_path);
+  //              _selected_path = str_path;
+  //            }
+  //          }
 
-        }
+  //      }
 
-  );
+  //);
 
   connect(ui->viewport, &ModelViewer::model_set
       ,[=] (const std::string& filename)
@@ -121,29 +116,39 @@ AssetBrowserWidget::AssetBrowserWidget(MapView* map_view, QWidget *parent)
   connect(ui->viewport, &ModelViewer::gl_data_unloaded,[=] () { emit gl_data_unloaded(); });
 
   // Handle preview rendering and drag
-  connect(ui->listfileTree, &QTreeView::expanded
-      ,[this] (const QModelIndex& index)
+  connect(ui->listfileTree->selectionModel(), &QItemSelectionModel::currentChanged
+      ,[this] (const QModelIndex& current, const QModelIndex& previous)
       {
         QSettings settings;
         bool render_preview = settings.value("assetBrowser/render_asset_preview").toBool();
 
-        if (!render_preview)
-          return;
+        auto path = current.data(Qt::UserRole + 1).toString().toStdString();
+        //auto itemTreeItem = std::find(_itemTreeMap.begin(), _itemTreeMap.end(), (QStandardItem*)current.model());
+        //if (itemTreeItem == _itemTreeMap.end())
+        //  return;
 
-        for (int i = 0; i != _sort_model->rowCount(index); ++i)
+        //const std::string& path = itemTreeItem.key();
+
+        if (path.ends_with(".wmo") || path.ends_with(".m2"))
         {
-          auto child = index.child(i, 0);
-          auto path = child.data(Qt::UserRole).toString();
-          if (path.endsWith(".wmo") || path.endsWith(".m2"))
+          if (render_preview)
           {
-            _preview_renderer->setModelOffscreen(path.toStdString());
+            _preview_renderer->setModelOffscreen(path);
 
             auto preview_pixmap = _preview_renderer->renderToPixmap();
-            auto item = _model->itemFromIndex(_sort_model->mapToSource(child));
+            auto item = _model->itemFromIndex(_sort_model->mapToSource(current));
             item->setIcon(QIcon(*preview_pixmap));
             item->setDragEnabled(true);
             item->setFlags(item->flags() | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
           }
+
+          ui->viewport->setModel(path);
+          _map_view->getObjectEditor()->copy(path);
+          _selected_path = path;
+        }
+        else
+        {
+          LoadDirectory(path);
         }
       }
 
@@ -151,88 +156,67 @@ AssetBrowserWidget::AssetBrowserWidget(MapView* map_view, QWidget *parent)
 
   setupConnectsCommon();
 
-  _wmo_group_and_lod_regex = QRegularExpression(".+_\\d{3}(_lod.+)*.wmo");
+  _wmo_group_and_lod_regex = std::regex(".+_\\d{3}(_lod.+)*.wmo");
 
-  updateModelData();
-
+  _itemTreeMap[""] = _model->invisibleRootItem();
+  LoadDirectory("");
 
 }
 
 void AssetBrowserWidget::setupConnectsCommon()
 {
   connect(ui->searchButton, &QPushButton::clicked
-      ,[this]()
-          {
+      ,[this]() {
               _sort_model->setFilterFixedString(ui->searchField->text());
-          }
-
-  );
+  });
 
   connect(viewport_overlay_ui->lightDirY, &QDial::valueChanged
-      ,[this]()
-          {
+      ,[this]() {
               ui->viewport->setLightDirection(viewport_overlay_ui->lightDirY->value(),
                                               viewport_overlay_ui->lightDirZ->value());
-          }
-  );
+  });
 
   connect(viewport_overlay_ui->lightDirZ, &QSlider::valueChanged
-      ,[this]()
-          {
+      ,[this]() {
               ui->viewport->setLightDirection(viewport_overlay_ui->lightDirY->value(),
                                               viewport_overlay_ui->lightDirZ->value());
-          }
-  );
+  });
 
   connect(viewport_overlay_ui->moveSensitivitySlider, &QSlider::valueChanged
-      ,[this]()
-          {
+      ,[this]() {
               ui->viewport->setMoveSensitivity(static_cast<float>(viewport_overlay_ui->moveSensitivitySlider->value()));
-          }
-  );
+  });
 
   connect(ui->viewport, &ModelViewer::sensitivity_changed
-      ,[this]()
-          {
+      ,[this]() {
               viewport_overlay_ui->moveSensitivitySlider->setValue(ui->viewport->getMoveSensitivity() * 30.0f);
-          }
-  );
+  });
 
   connect(viewport_overlay_ui->cameraXButton, &QPushButton::clicked
-      ,[this]()
-          {
+      ,[this]() {
               ui->viewport->resetCamera(0.f, 0.f, 0.f, 0.f, -90.f, 0.f);
-          }
-  );
+  });
 
   connect(viewport_overlay_ui->cameraYButton, &QPushButton::clicked
-      ,[this]()
-          {
+      ,[this]() {
               ui->viewport->resetCamera(0.f, 0.f, 0.f, 0.f, 0, 90.f);
-          }
-  );
+  });
 
   connect(viewport_overlay_ui->cameraZButton, &QPushButton::clicked
-      ,[this]()
-          {
+      ,[this]() {
               ui->viewport->resetCamera(0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
-          }
-  );
+  });
 
   connect(viewport_overlay_ui->cameraResetButton, &QPushButton::clicked
-      ,[this]()
-          {
+      ,[this]() {
               ui->viewport->resetCamera();
-          }
-  );
+  });
 
   connect(viewport_overlay_ui->doodadSetSelector, qOverload<int>(&QComboBox::currentIndexChanged)
-      ,[this](int index)
-          {
+      ,[this](int index) {
               ui->viewport->setActiveDoodadSet(ui->viewport->getLastSelectedModel(),
                                                viewport_overlay_ui->doodadSetSelector->currentText().toStdString());
-          }
-  );
+  });
 
   // Render toggles
   connect(viewport_overlay_ui->toggleWMOButton, &QPushButton::clicked,
@@ -262,54 +246,73 @@ void AssetBrowserWidget::setupConnectsCommon()
           [this](bool state) {ui->viewport->_draw_grid.set(state);});
 }
 
-// Add WMOs and M2s from project directory recursively
-void AssetBrowserWidget::recurseDirectory(Model::TreeManager& tree_mgr, const QString& s_dir, const QString& project_dir)
+void AssetBrowserWidget::LoadDirectory(const std::string& directory)
 {
-  QDir dir(s_dir);
-  QFileInfoList list = dir.entryInfoList();
-  for (int i = 0; i < list.count(); ++i)
-  {
-    QFileInfo info = list[i];
+  QStandardItem* child;
+  QStandardItem* parent = _itemTreeMap[directory];
 
-    QString q_path = info.filePath();
-    if (info.isDir())
+  if (!parent)
+  {
+    LoadDirectory(directory.substr(0, directory.find_last_of('/')));
+    parent = _itemTreeMap[directory];
+  }
+
+  // Has children == already loaded.
+  if (parent->hasChildren())
+    return;
+
+  auto ItemAddFunc = [&](const std::string_view& name)
+  {
+    // Starts with {directory}
+    if (!name.starts_with(directory))
+      return;
+
+    // Make sure its a model
+    if (!((name.ends_with(".wmo")) || name.ends_with(".m2")))
+      return;
+
+    // also not a group or lod version. Doing this seperately since its quite heavy.
+    if (std::regex_match(name.data(), _wmo_group_and_lod_regex))
+      return;
+
+    // Shifts it over and splits it leaving the file/directory name.
+    std::string item = std::string(name.substr(0, name.find_first_of('/', directory.size()+1)));
+    if (item.ends_with('/'))
+      item = item.substr(0, item.size() - 1);
+    if (!_itemTreeMap[item])
     {
-      if (info.fileName() != ".." && info.fileName() != ".")
-      {
-        recurseDirectory(tree_mgr, q_path, project_dir);
-      }
+      // TODO: Find a nicer way to handle the leading slash.
+      QString qitem = QString::fromStdString(item.substr(directory.size() ? directory.size() + 1 : directory.size()));
+      child = new QStandardItem(qitem);
+      child->setData(qitem, Qt::UserRole);
+      child->setData(QString::fromStdString(item), Qt::UserRole + 1);
+      parent->appendRow(child);
+      child->setEditable(false);
+      child->setCheckable(false);
+      _itemTreeMap[item] = child;
     }
-    else
+  };
+
+  // Collect folder items.
+  std::vector<std::string> files;
+  std::string dir = Noggit::Project::CurrentProject::get()->ProjectPath + '/' + directory;
+  if (std::filesystem::exists(dir))
+  {
+    for (auto const& dirEntry : std::filesystem::recursive_directory_iterator(dir))
     {
-      if (!((q_path.endsWith(".wmo") && !_wmo_group_and_lod_regex.match(q_path).hasMatch())
-      || q_path.endsWith(".m2")))
+      if (!dirEntry.is_regular_file()
+        || !dirEntry.path().string().ends_with(".wmo")
+        || !dirEntry.path().string().ends_with(".m2"))
         continue;
-
-      tree_mgr.addItem(QDir(project_dir).relativeFilePath(q_path.toStdString().c_str()));
+      files.emplace_back(dirEntry.path().string());
     }
   }
-}
 
-void AssetBrowserWidget::updateModelData()
-{
-  Model::TreeManager tree_mgr =  Model::TreeManager(_model);
-  for (auto& key_pair : Noggit::Application::NoggitApplication::instance()->clientData()->listfile()->pathToFileDataIDMap())
-  {
-    std::string const& filename = key_pair.first;
-
-    QString q_path = QString(filename.c_str());
-
-    if (!((q_path.endsWith(".wmo") && !_wmo_group_and_lod_regex.match(q_path).hasMatch())
-    || q_path.endsWith(".m2")))
-      continue;
-
-    tree_mgr.addItem(filename.c_str());
-  }
-
-
-  QSettings settings;
-  QString project_dir = QString(Noggit::Project::CurrentProject::get()->ProjectPath.c_str());
-  recurseDirectory(tree_mgr, project_dir, project_dir);
+  // Add directories from listfile and folder.
+  for (const auto& [name, _] : Noggit::Application::NoggitApplication::instance()->clientData()->listfile()->pathToFileDataIDMap())
+    ItemAddFunc(name);
+  for (const std::string& file : files)
+    ItemAddFunc(file);
 
   _sort_model->setSortRole(Qt::UserRole);
   _sort_model->sort(0, Qt::AscendingOrder);

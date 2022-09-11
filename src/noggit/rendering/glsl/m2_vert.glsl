@@ -1,5 +1,5 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 330 core
+#version 450 core
 
 in vec4 pos;
 in vec3 normal;
@@ -47,20 +47,18 @@ vec2 sphere_map(vec3 vert, vec3 norm)
 
 vec2 get_texture_uv(int tex_unit_lookup, vec3 vert, vec3 norm)
 {
-  if(tex_unit_lookup == 0)
+  switch(tex_unit_lookup)
   {
+  case 0:
     return sphere_map(vert, norm);
-  }
-  else if(tex_unit_lookup == 1)
-  {
+    break;
+  case 1:
     return (transpose(tex_matrix_1) * vec4(texcoord1, 0.0, 1.0)).xy;
-  }
-  else if(tex_unit_lookup == 2)
-  {
+    break;
+  case 2:
     return (transpose(tex_matrix_2) * vec4(texcoord2, 0.0, 1.0)).xy;
-  }
-  else
-  {
+    break;
+  default:
     return vec2(0.0);
   }
 }

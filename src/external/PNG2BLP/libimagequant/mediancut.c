@@ -195,8 +195,8 @@ static double prepare_sort(struct box *b, hist_item achv[])
 
     const unsigned int ind1 = b->ind;
     const unsigned int colors = b->colors;
-    #pragma omp parallel for if (colors > 25000) \
-        schedule(static) default(none) shared(achv, channels)
+    //#pragma omp parallel for if (colors > 25000) \
+    //    schedule(static) default(none) shared(achv, channels)
     for(unsigned int i=0; i < colors; i++) {
         const float *chans = (const float *)&achv[ind1 + i].acolor;
         // Only the first channel really matters. When trying median cut many times
@@ -210,8 +210,8 @@ static double prepare_sort(struct box *b, hist_item achv[])
     // box will be split to make color_weight of each side even
     const unsigned int ind = b->ind, end = ind+b->colors;
     double totalvar = 0;
-    #pragma omp parallel for if (end - ind > 15000) \
-        schedule(static) default(shared) reduction(+:totalvar)
+    //#pragma omp parallel for if (end - ind > 15000) \
+    //    schedule(static) default(shared) reduction(+:totalvar)
     for(unsigned int j=ind; j < end; j++) totalvar += (achv[j].color_weight = color_weight(median, achv[j]));
     return totalvar / 2.0;
 }
@@ -331,14 +331,14 @@ LIQ_PRIVATE colormap *mediancut(histogram *hist, unsigned int newcolors, const d
     /*
      ** Set up the initial box.
      */
-    #pragma omp parallel
-    #pragma omp single
+    //#pragma omp parallel
+    //#pragma omp single
     {
         double sum = 0;
         for(unsigned int i=0; i < hist->size; i++) {
             sum += achv[i].adjusted_weight;
         }
-        #pragma omp taskgroup
+        //#pragma omp taskgroup
         {
             box_init(&bv[0], achv, 0, hist->size, sum);
         }
@@ -386,7 +386,7 @@ LIQ_PRIVATE colormap *mediancut(histogram *hist, unsigned int newcolors, const d
             double lowersum = 0;
             for(unsigned int i=0; i < break_at; i++) lowersum += achv[indx + i].adjusted_weight;
 
-            #pragma omp taskgroup
+            //#pragma omp taskgroup
             {
                 box_init(&bv[bi], achv, indx, break_at, lowersum);
                 box_init(&bv[boxes], achv, indx + break_at, clrs - break_at, sm - lowersum);
@@ -443,8 +443,8 @@ static f_pixel averagepixels(unsigned int clrs, const hist_item achv[])
 {
     double r = 0, g = 0, b = 0, a = 0, sum = 0;
 
-    #pragma omp parallel for if (clrs > 25000) \
-        schedule(static) default(shared) reduction(+:a) reduction(+:r) reduction(+:g) reduction(+:b) reduction(+:sum)
+    //#pragma omp parallel for if (clrs > 25000) \
+    //    schedule(static) default(shared) reduction(+:a) reduction(+:r) reduction(+:g) reduction(+:b) reduction(+:sum)
     for(unsigned int i = 0; i < clrs; i++) {
         const f_pixel px = achv[i].acolor;
         const double weight = achv[i].adjusted_weight;

@@ -9,12 +9,14 @@
 #include <noggit/application/Configuration/NoggitApplicationConfiguration.hpp>
 #include <noggit/ui/windows/noggitWindow/components/BuildMapListComponent.hpp>
 #include <noggit/project/ApplicationProject.h>
+
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QStackedWidget>
+#include <QWidget>
+
 #include <string>
 #include <memory>
 #include <unordered_set>
-#include <QWidget>
 
 class StackedWidget;
 
@@ -45,7 +47,7 @@ namespace Noggit::Ui::Windows
       void buildMenu();
     signals:
       void exitPromptOpened();
-      void mapSelected(int map_id);
+      void mapSelected(World*, int map_id);
 
 
     private:

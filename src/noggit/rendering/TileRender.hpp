@@ -15,7 +15,7 @@ namespace Noggit::Rendering
 {
   struct MapTileDrawCall
   {
-    std::array<int, 11> samplers;
+    std::array<GLuint, 11> samplers;
     unsigned start_chunk;
     unsigned n_chunks;
   };
@@ -81,11 +81,12 @@ namespace Noggit::Rendering
     // drawing
     std::vector<MapTileDrawCall> _draw_calls;
 
-    OpenGL::Scoped::deferred_upload_textures<4> _chunk_texture_arrays;
-    GLuint const& _height_tex = _chunk_texture_arrays[0];
-    GLuint const& _mccv_tex = _chunk_texture_arrays[1];
-    GLuint const& _shadowmap_tex = _chunk_texture_arrays[2];
-    GLuint const& _alphamap_tex = _chunk_texture_arrays[3];
+    OpenGL::Scoped::deferred_upload_textures<GL_TEXTURE_2D, 2> _chunk_textures;
+    OpenGL::Scoped::deferred_upload_textures<GL_TEXTURE_2D_ARRAY, 2> _chunk_texture_arrays;
+    GLuint const& _height_tex = _chunk_textures[0];
+    GLuint const& _mccv_tex = _chunk_textures[1];
+    GLuint const& _shadowmap_tex = _chunk_texture_arrays[0];
+    GLuint const& _alphamap_tex = _chunk_texture_arrays[1];
 
     GLuint _tile_occlusion_query;
     bool _tile_occlusion_query_in_use = false;

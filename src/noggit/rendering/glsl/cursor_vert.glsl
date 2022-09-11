@@ -1,5 +1,5 @@
 // This file is part of Noggit3, licensed under GNU General Public License (version 3).
-#version 330 core
+#version 450 core
 
 uniform mat4 model_view_projection;
 uniform vec3 cursor_pos;

@@ -3,19 +3,18 @@
 #ifndef NOGGIT_WORLDRENDER_HPP
 #define NOGGIT_WORLDRENDER_HPP
 
-#include <noggit/rendering/BaseRender.hpp>
-
-#include <external/glm/glm.hpp>
 #include <math/trig.hpp>
-
-#include <noggit/tool_enums.hpp>
+#include <noggit/map_horizon.h>
+#include <noggit/rendering/BaseRender.hpp>
 #include <noggit/rendering/CursorRender.hpp>
 #include <noggit/rendering/LiquidTextureManager.hpp>
-#include <noggit/map_horizon.h>
-#include <noggit/Sky.h>
-
-#include <opengl/shader.hpp>
 #include <noggit/rendering/Primitives.hpp>
+#include <noggit/Sky.h>
+#include <noggit/tool_enums.hpp>
+#include <opengl/shader.hpp>
+
+
+#include <glm/glm.hpp>
 
 #include <memory>
 

@@ -1,4 +1,4 @@
-#version 330 core
+#version 450 core
 
 in vec4 position;
 
@@ -8,8 +8,8 @@ uniform float radius;
 
 void main()
 {
-    vec4 pos = position;
-    pos.xyz *= radius;
-    pos.xyz += origin;
-    gl_Position = model_view_projection * pos;
+  vec4 pos = position;
+  pos.xyz *= radius;
+  pos.xyz += origin;
+  gl_Position = model_view_projection * pos;
 }

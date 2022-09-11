@@ -11,6 +11,7 @@
 #include <util/CurrentFunction.hpp>
 #include <memory>
 
+// #define NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
 
 namespace
 {
@@ -25,46 +26,46 @@ namespace
   struct verify_context_and_check_for_gl_errors
   {
     template<typename ExtraInfo> verify_context_and_check_for_gl_errors
-      (QOpenGLContext* current_context, char const* function, ExtraInfo&& extra_info)
-      : _current_context (current_context)
-      , _function (function)
-      , _extra_info (extra_info)
+    (QOpenGLContext* current_context, char const* function, ExtraInfo&& extra_info)
+      : _current_context(current_context)
+      , _function(function)
+      , _extra_info(extra_info)
     {
       if (!_current_context)
       {
-        throw std::runtime_error (std::string(_function) + ": called without active OpenGL context: no context at all");
+        throw std::runtime_error(std::string(_function) + ": called without active OpenGL context: no context at all");
       }
       if (!_current_context->isValid())
       {
-        throw std::runtime_error (std::string(_function) + ": called without active OpenGL context: invalid");
+        throw std::runtime_error(std::string(_function) + ": called without active OpenGL context: invalid");
       }
       if (QOpenGLContext::currentContext() != _current_context)
       {
-        throw std::runtime_error (std::string(_function) + ": called without active OpenGL context: not current context");
+        throw std::runtime_error(std::string(_function) + ": called without active OpenGL context: not current context");
       }
     }
-    verify_context_and_check_for_gl_errors (QOpenGLContext* current_context, char const* function)
-      : verify_context_and_check_for_gl_errors (current_context, function, &verify_context_and_check_for_gl_errors::no_extra_info)
+    verify_context_and_check_for_gl_errors(QOpenGLContext* current_context, char const* function)
+      : verify_context_and_check_for_gl_errors(current_context, function, &verify_context_and_check_for_gl_errors::no_extra_info)
     {}
 
     template<typename Functions>
     Functions* version_functions() const
     {
-      Functions* f (_current_context->versionFunctions<Functions>());
+      Functions* f(_current_context->versionFunctions<Functions>());
       if (!f)
       {
-        throw std::runtime_error (std::string(_function) + ": requires OpenGL functions for version " + typeid (Functions).name());
+        throw std::runtime_error(std::string(_function) + ": requires OpenGL functions for version " + typeid (Functions).name());
       }
       return f;
     }
     template<typename Extension>
     std::unique_ptr<Extension> extension_functions() const
     {
-      if (!_current_context->hasExtension (extension_traits<Extension>::name))
+      if (!_current_context->hasExtension(extension_traits<Extension>::name))
       {
-        throw std::runtime_error (std::string(_function) + ": requires OpenGL extension " + extension_traits<Extension>::name);
+        throw std::runtime_error(std::string(_function) + ": requires OpenGL extension " + extension_traits<Extension>::name);
       }
-      std::unique_ptr<Extension> functions (new Extension());
+      std::unique_ptr<Extension> functions(new Extension());
       functions->initializeOpenGLFunctions();
       return functions;
     }
@@ -90,15 +91,15 @@ namespace
 
         switch (error)
         {
-          case GL_INVALID_ENUM: errors += " GL_INVALID_ENUM"; break;
-          case GL_INVALID_FRAMEBUFFER_OPERATION: errors += " GL_INVALID_FRAMEBUFFER_OPERATION"; break;
-          case GL_INVALID_OPERATION: errors += " GL_INVALID_OPERATION"; break;
-          case GL_INVALID_VALUE: errors += " GL_INVALID_VALUE"; break;
-          case GL_OUT_OF_MEMORY: errors += " GL_OUT_OF_MEMORY"; break;
-          case GL_STACK_OVERFLOW: errors += " GL_STACK_OVERFLOW"; break;
-          case GL_STACK_UNDERFLOW: errors += " GL_STACK_UNDERFLOW"; break;
-          case GL_TABLE_TOO_LARGE: errors += " GL_TABLE_TOO_LARGE"; break;
-          default: errors += " UNKNOWN_ERROR (" + std::to_string(error) + ")"; break;
+        case GL_INVALID_ENUM: errors += " GL_INVALID_ENUM"; break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION: errors += " GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+        case GL_INVALID_OPERATION: errors += " GL_INVALID_OPERATION"; break;
+        case GL_INVALID_VALUE: errors += " GL_INVALID_VALUE"; break;
+        case GL_OUT_OF_MEMORY: errors += " GL_OUT_OF_MEMORY"; break;
+        case GL_STACK_OVERFLOW: errors += " GL_STACK_OVERFLOW"; break;
+        case GL_STACK_UNDERFLOW: errors += " GL_STACK_UNDERFLOW"; break;
+        case GL_TABLE_TOO_LARGE: errors += " GL_TABLE_TOO_LARGE"; break;
+        default: errors += " UNKNOWN_ERROR (" + std::to_string(error) + ")"; break;
         }
 
         ++error_count;
@@ -115,13 +116,13 @@ namespace
 #ifndef NOGGIT_DO_NOT_THROW_ON_OPENGL_ERRORS
         LogError << _function << ":" + errors << std::endl;
 #else
-        throw std::runtime_error (_function + ":" + errors);
+        throw std::runtime_error(_function + ":" + errors);
 #endif
       }
     }
 
-    verify_context_and_check_for_gl_errors (verify_context_and_check_for_gl_errors const&) = delete;
-    verify_context_and_check_for_gl_errors (verify_context_and_check_for_gl_errors&&) = delete;
+    verify_context_and_check_for_gl_errors(verify_context_and_check_for_gl_errors const&) = delete;
+    verify_context_and_check_for_gl_errors(verify_context_and_check_for_gl_errors&&) = delete;
     verify_context_and_check_for_gl_errors& operator= (verify_context_and_check_for_gl_errors const&) = delete;
     verify_context_and_check_for_gl_errors& operator= (verify_context_and_check_for_gl_errors&&) = delete;
   };
@@ -132,49 +133,49 @@ void OpenGL::context::enable (GLenum target)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glEnable (target);
+  return _core_func->glEnable (target);
 }
 void OpenGL::context::disable (GLenum target)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDisable (target);
+  return _core_func->glDisable (target);
 }
 GLboolean OpenGL::context::isEnabled (GLenum target)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glIsEnabled (target);
+  return _core_func->glIsEnabled (target);
 }
 void OpenGL::context::viewport (GLint x, GLint y, GLsizei width, GLsizei height)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glViewport (x, y, width, height);
+  return _core_func->glViewport (x, y, width, height);
 }
 void OpenGL::context::depthFunc (GLenum target)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDepthFunc (target);
+  return _core_func->glDepthFunc (target);
 }
 void OpenGL::context::depthMask (GLboolean mask)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDepthMask (mask);
+  return _core_func->glDepthMask (mask);
 }
 void OpenGL::context::blendFunc (GLenum sfactor, GLenum dfactor)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glBlendFunc (sfactor, dfactor);
+  return _core_func->glBlendFunc (sfactor, dfactor);
 }
 
 void OpenGL::context::clear (GLenum target)
@@ -182,14 +183,14 @@ void OpenGL::context::clear (GLenum target)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glClear (target);
+  return _core_func->glClear (target);
 }
 void OpenGL::context::clearColor (GLfloat r, GLfloat g, GLfloat b, GLfloat a)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glClearColor (r, g, b, a);
+  return _core_func->glClearColor (r, g, b, a);
 }
 
 void OpenGL::context::readBuffer (GLenum target)
@@ -197,14 +198,14 @@ void OpenGL::context::readBuffer (GLenum target)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glReadBuffer (target);
+  return _core_func->glReadBuffer (target);
 }
 void OpenGL::context::readPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid* data)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glReadPixels (x, y, width, height, format, type, data);
+  return _core_func->glReadPixels (x, y, width, height, format, type, data);
 }
 
 void OpenGL::context::lineWidth (GLfloat width)
@@ -212,7 +213,7 @@ void OpenGL::context::lineWidth (GLfloat width)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glLineWidth (width);
+  return _core_func->glLineWidth (width);
 }
 
 void OpenGL::context::pointParameterf (GLenum pname, GLfloat param)
@@ -220,35 +221,35 @@ void OpenGL::context::pointParameterf (GLenum pname, GLfloat param)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glPointParameterf (pname, param);
+  return _core_func->glPointParameterf (pname, param);
 }
 void OpenGL::context::pointParameteri (GLenum pname, GLint param)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glPointParameteri (pname, param);
+  return _core_func->glPointParameteri (pname, param);
 }
 void OpenGL::context::pointParameterfv (GLenum pname, GLfloat const* param)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glPointParameterfv (pname, param);
+  return _core_func->glPointParameterfv (pname, param);
 }
 void OpenGL::context::pointParameteriv (GLenum pname, GLint const* param)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glPointParameteriv (pname, param);
+  return _core_func->glPointParameteriv (pname, param);
 }
 void OpenGL::context::pointSize (GLfloat size)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glPointSize (size);
+  return _core_func->glPointSize (size);
 }
 
 void OpenGL::context::hint (GLenum target, GLenum mode)
@@ -256,14 +257,14 @@ void OpenGL::context::hint (GLenum target, GLenum mode)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glHint (target, mode);
+  return _core_func->glHint (target, mode);
 }
 void OpenGL::context::polygonMode (GLenum face, GLenum mode)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glPolygonMode (face, mode);
+  return _core_func->glPolygonMode (face, mode);
 }
 
 void OpenGL::context::genTextures (GLuint count, GLuint* textures)
@@ -271,28 +272,28 @@ void OpenGL::context::genTextures (GLuint count, GLuint* textures)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGenTextures (count, textures);
+  return _core_func->glGenTextures (count, textures);
 }
 void OpenGL::context::deleteTextures (GLuint count, GLuint* textures)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDeleteTextures (count, textures);
+  return _core_func->glDeleteTextures (count, textures);
 }
 void OpenGL::context::bindTexture (GLenum target, GLuint texture)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glBindTexture (target, texture);
+  return _core_func->glBindTexture (target, texture);
 }
 void OpenGL::context::texImage2D (GLenum target, GLint level, GLint internal_format, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, GLvoid const* data)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glTexImage2D (target, level, internal_format, width, height, border, format, type, data);
+  return _core_func->glTexImage2D (target, level, internal_format, width, height, border, format, type, data);
 }
 void OpenGL::context::texSubImage2D(GLenum target,
                                     GLint level,
@@ -307,7 +308,7 @@ void OpenGL::context::texSubImage2D(GLenum target,
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+  return _core_func->glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 void OpenGL::context::compressedTexSubImage2D(
     GLenum target,
@@ -323,14 +324,14 @@ void OpenGL::context::compressedTexSubImage2D(
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
+  return _core_func->glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
 }
 void OpenGL::context::texImage3D (GLenum target, GLint level, GLint internal_format, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, GLvoid const* data)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glTexImage3D (target, level, internal_format, width, height, depth, border, format, type, data);
+  return _core_func->glTexImage3D (target, level, internal_format, width, height, depth, border, format, type, data);
 }
 void OpenGL::context::texSubImage3D (GLenum target,
                                     GLint level,
@@ -347,7 +348,7 @@ void OpenGL::context::texSubImage3D (GLenum target,
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glTexSubImage3D (target, level, xoffset,yoffset ,zoffset, width, height, depth, format, type, pixels);
+  return _core_func->glTexSubImage3D (target, level, xoffset,yoffset ,zoffset, width, height, depth, format, type, pixels);
 }
 void OpenGL::context::compressedTexSubImage3D (GLenum target,
                                                   GLint level,
@@ -364,35 +365,42 @@ void OpenGL::context::compressedTexSubImage3D (GLenum target,
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glCompressedTexSubImage3D (target, level, xoffset,yoffset ,zoffset, width, height, depth, format, imageSize, data);
+  return _core_func->glCompressedTexSubImage3D (target, level, xoffset,yoffset ,zoffset, width, height, depth, format, imageSize, data);
+}
+inline NOGGIT_FORCEINLINE void OpenGL::context::compressedTexImage1D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, GLvoid const* data)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  return _core_func->glCompressedTexImage1D(target, level, internalformat, width, border, imageSize, data);
 }
 void OpenGL::context::compressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, GLvoid const* data)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glCompressedTexImage2D (target, level, internalformat, width, height, border, imageSize, data);
+  return _core_func->glCompressedTexImage2D (target, level, internalformat, width, height, border, imageSize, data);
 }
 void OpenGL::context::compressedTexImage3D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, GLvoid const* data)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glCompressedTexImage3D (target, level, internalformat, width, height, depth, border, imageSize, data);
+  return _core_func->glCompressedTexImage3D (target, level, internalformat, width, height, depth, border, imageSize, data);
 }
 void OpenGL::context::generateMipmap (GLenum target)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGenerateMipmap (target);
+  return _core_func->glGenerateMipmap (target);
 }
 void OpenGL::context::activeTexture (GLenum target)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glActiveTexture (target);
+  return _core_func->glActiveTexture (target);
 }
 
 void OpenGL::context::texParameteri (GLenum target, GLenum pname, GLint param)
@@ -400,28 +408,28 @@ void OpenGL::context::texParameteri (GLenum target, GLenum pname, GLint param)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glTexParameteri (target, pname, param);
+  return _core_func->glTexParameteri (target, pname, param);
 }
 void OpenGL::context::texParameterf (GLenum target, GLenum pname, GLfloat param)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glTexParameterf (target, pname, param);
+  return _core_func->glTexParameterf (target, pname, param);
 }
 void OpenGL::context::texParameteriv (GLenum target, GLenum pname, GLint const* params)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glTexParameteriv (target, pname, params);
+  return _core_func->glTexParameteriv (target, pname, params);
 }
 void OpenGL::context::texParameterfv (GLenum target, GLenum pname, GLfloat const* params)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glTexParameterfv (target, pname, params);
+  return _core_func->glTexParameterfv (target, pname, params);
 }
 
 void OpenGL::context::genVertexArrays (GLuint count, GLuint* arrays)
@@ -429,84 +437,84 @@ void OpenGL::context::genVertexArrays (GLuint count, GLuint* arrays)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glGenVertexArrays(count, arrays);
+  return _core_func->glGenVertexArrays(count, arrays);
 }
 void OpenGL::context::deleteVertexArray (GLuint count, GLuint* arrays)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glDeleteVertexArrays(count, arrays);
+  return _core_func->glDeleteVertexArrays(count, arrays);
 }
 void OpenGL::context::bindVertexArray (GLenum array)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glBindVertexArray(array);
+  return _core_func->glBindVertexArray(array);
 }
 void OpenGL::context::genBuffers (GLuint count, GLuint* buffers)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGenBuffers (count, buffers);
+  return _core_func->glGenBuffers (count, buffers);
 }
 void OpenGL::context::deleteBuffers (GLuint count, GLuint* buffers)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDeleteBuffers (count, buffers);
+  return _core_func->glDeleteBuffers (count, buffers);
 }
 void OpenGL::context::bindBuffer (GLenum target, GLuint buffer)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glBindBuffer (target, buffer);
+  return _core_func->glBindBuffer (target, buffer);
 }
 void OpenGL::context::bindBufferRange (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glBindBufferRange (target, index, buffer, offset, size);
+  return _core_func->glBindBufferRange (target, index, buffer, offset, size);
 }
 GLvoid* OpenGL::context::mapBuffer (GLenum target, GLenum access)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glMapBuffer (target, access);
+  return _core_func->glMapBuffer (target, access);
 }
 GLboolean OpenGL::context::unmapBuffer (GLenum target)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glUnmapBuffer (target);
+  return _core_func->glUnmapBuffer (target);
 }
 void OpenGL::context::drawElements (GLenum mode, GLsizei count, GLenum type, GLvoid const* indices)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDrawElements (mode, count, type, indices);
+  return _core_func->glDrawElements (mode, count, type, indices);
 }
 void OpenGL::context::drawElementsInstanced (GLenum mode, GLsizei count, GLenum type, GLvoid const* indices, GLsizei instancecount)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glDrawElementsInstanced (mode, count, type, indices, instancecount);
+  return _core_func->glDrawElementsInstanced (mode, count, type, indices, instancecount);
 }
 void OpenGL::context::drawRangeElements (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, GLvoid const* indices)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glDrawRangeElements (mode, start, end, count, type, indices);
+  return _core_func->glDrawRangeElements (mode, start, end, count, type, indices);
 }
 
 void OpenGL::context::genPrograms (GLsizei count, GLuint* programs)
@@ -543,7 +551,7 @@ void OpenGL::context::getProgramiv (GLuint program, GLenum pname, GLint* params)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGetProgramiv (program, pname, params);
+  return _core_func->glGetProgramiv (program, pname, params);
 }
 void OpenGL::context::programLocalParameter4f (GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
@@ -556,28 +564,28 @@ void OpenGL::context::getBooleanv (GLenum target, GLboolean* value)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGetBooleanv (target, value);
+  return _core_func->glGetBooleanv (target, value);
 }
 void OpenGL::context::getDoublev (GLenum target, GLdouble* value)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glGetDoublev (target, value);
+  return _core_func->glGetDoublev (target, value);
 }
 void OpenGL::context::getFloatv (GLenum target, GLfloat* value)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGetFloatv (target, value);
+  return _core_func->glGetFloatv (target, value);
 }
 void OpenGL::context::getIntegerv (GLenum target, GLint* value)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGetIntegerv (target, value);
+  return _core_func->glGetIntegerv (target, value);
 }
 
 GLubyte const* OpenGL::context::getString (GLenum target)
@@ -585,7 +593,7 @@ GLubyte const* OpenGL::context::getString (GLenum target)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGetString (target);
+  return _core_func->glGetString (target);
 }
 
 GLuint OpenGL::context::createShader (GLenum shader_type)
@@ -593,45 +601,45 @@ GLuint OpenGL::context::createShader (GLenum shader_type)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glCreateShader (shader_type);
+  return _core_func->glCreateShader (shader_type);
 }
 void OpenGL::context::deleteShader (GLuint shader)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDeleteShader (shader);
+  return _core_func->glDeleteShader (shader);
 }
 void OpenGL::context::shaderSource (GLuint shader, GLsizei count, GLchar const** string, GLint const* length)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glShaderSource (shader, count, string, length);
+  return _core_func->glShaderSource (shader, count, string, length);
 }
-void OpenGL::context::compile_shader (GLuint shader)
+void OpenGL::context::compileShader (GLuint shader)
 {
   {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
     verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-    _current_context->functions()->glCompileShader (shader);
+    _core_func->glCompileShader (shader);
   }
-  if (get_shader (shader, GL_COMPILE_STATUS) != GL_TRUE)
+  if (getShader (shader, GL_COMPILE_STATUS) != GL_TRUE)
   {
-    std::vector<char> log (get_shader (shader, GL_INFO_LOG_LENGTH));
-    _current_context->functions()->glGetShaderInfoLog (shader, log.size(), nullptr, log.data());
+    std::vector<char> log (getShader (shader, GL_INFO_LOG_LENGTH));
+    _core_func->glGetShaderInfoLog (shader, (GLsizei)log.size(), nullptr, log.data());
     LogDebug << std::string (log.data ()) << std::endl;
     throw std::runtime_error ("compiling shader failed: " + std::string (log.data()));
   }
 }
-GLint OpenGL::context::get_shader (GLuint shader, GLenum pname)
+GLint OpenGL::context::getShader (GLuint shader, GLenum pname)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
   GLint params;
-  _current_context->functions()->glGetShaderiv (shader, pname, &params);
+  _core_func->glGetShaderiv (shader, pname, &params);
   return params;
 }
 
@@ -640,40 +648,40 @@ GLuint OpenGL::context::createProgram()
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glCreateProgram();
+  return _core_func->glCreateProgram();
 }
 void OpenGL::context::deleteProgram (GLuint program)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDeleteProgram (program);
+  return _core_func->glDeleteProgram (program);
 }
 void OpenGL::context::attachShader (GLuint program, GLuint shader)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glAttachShader (program, shader);
+  return _core_func->glAttachShader (program, shader);
 }
 void OpenGL::context::detachShader (GLuint program, GLuint shader)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDetachShader (program, shader);
+  return _core_func->glDetachShader (program, shader);
 }
-void OpenGL::context::link_program (GLuint program)
+void OpenGL::context::linkProgram (GLuint program)
 {
   {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
     verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-    _current_context->functions()->glLinkProgram (program);
+    _core_func->glLinkProgram (program);
   }
-  if (get_program (program, GL_LINK_STATUS) != GL_TRUE)
+  if (getProgram (program, GL_LINK_STATUS) != GL_TRUE)
   {
-    std::string error = get_program_info_log(program);
+    std::string error = getProgramInfoLog(program);
     LogError << "linking program failed: " << error << std::endl;
     throw std::runtime_error ("linking program failed: " + error);
   }
@@ -683,9 +691,9 @@ void OpenGL::context::useProgram (GLuint program)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glUseProgram (program);
+  return _core_func->glUseProgram (program);
 }
-void OpenGL::context::validate_program (GLuint program)
+void OpenGL::context::validateProgram (GLuint program)
 {
   // "The issue is that Mac does not allow validating shaders before
   // they are bound to a VBO. So, validating needs to be done after
@@ -701,35 +709,37 @@ void OpenGL::context::validate_program (GLuint program)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
     verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-    _current_context->functions()->glValidateProgram (program);
+    _core_func->glValidateProgram (program);
   }
-  if (get_program (program, GL_VALIDATE_STATUS) != GL_TRUE)
+  if (getProgram (program, GL_VALIDATE_STATUS) != GL_TRUE)
   {
-    std::string error = get_program_info_log(program);
+    std::string error = getProgramInfoLog(program);
     LogError << "validating program failed: " << error << std::endl;
     throw std::runtime_error("validating program failed: " + error);
   }
 }
-GLint OpenGL::context::get_program (GLuint program, GLenum pname)
+GLint OpenGL::context::getProgram (GLuint program, GLenum pname)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
   GLint params;
-  _current_context->functions()->glGetProgramiv (program, pname, &params);
+  _core_func->glGetProgramiv (program, pname, &params);
   return params;
 }
-std::string OpenGL::context::get_program_info_log(GLuint program)
+std::string OpenGL::context::getProgramInfoLog(GLuint program)
 {
-  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
-  std::vector<char> log(get_program(program, GL_INFO_LOG_LENGTH));
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  std::vector<char> log(getProgram(program, GL_INFO_LOG_LENGTH));
 
   if (log.empty())
   {
     return "<empty log>";
   }
 
-  _current_context->functions()->glGetProgramInfoLog(program, log.size(), nullptr, log.data());
+  _core_func->glGetProgramInfoLog(program, (GLsizei)log.size(), nullptr, log.data());
 
   return std::string(log.data());
 }
@@ -739,14 +749,14 @@ GLint OpenGL::context::getAttribLocation (GLuint program, GLchar const* name)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGetAttribLocation (program, name);
+  return _core_func->glGetAttribLocation (program, name);
 }
 void OpenGL::context::vertexAttribPointer (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLvoid const* pointer)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glVertexAttribPointer (index, size, type, normalized, stride, pointer);
+  return _core_func->glVertexAttribPointer (index, size, type, normalized, stride, pointer);
 }
 void OpenGL::context::vertexAttribIPointer (GLuint index,
                                             GLint size,
@@ -757,28 +767,28 @@ void OpenGL::context::vertexAttribIPointer (GLuint index,
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glVertexAttribIPointer (index, size, type, stride, pointer);
+  return _core_func->glVertexAttribIPointer (index, size, type, stride, pointer);
 }
 void OpenGL::context::vertexAttribDivisor (GLuint index, GLuint divisor)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glVertexAttribDivisor(index, divisor);
+  return _core_func->glVertexAttribDivisor(index, divisor);
 }
 void OpenGL::context::enableVertexAttribArray (GLuint index)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glEnableVertexAttribArray (index);
+  return _core_func->glEnableVertexAttribArray (index);
 }
 void OpenGL::context::disableVertexAttribArray (GLuint index)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glDisableVertexAttribArray (index);
+  return _core_func->glDisableVertexAttribArray (index);
 }
 
 GLint OpenGL::context::getUniformLocation (GLuint program, GLchar const* name)
@@ -786,7 +796,7 @@ GLint OpenGL::context::getUniformLocation (GLuint program, GLchar const* name)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return (_current_context->functions()->glGetUniformLocation (program, name));
+  return (_core_func->glGetUniformLocation (program, name));
 }
 
 GLint OpenGL::context::getUniformBlockIndex (GLuint program, GLchar const* name)
@@ -795,7 +805,7 @@ GLint OpenGL::context::getUniformBlockIndex (GLuint program, GLchar const* name)
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
 
-  auto val (_4_1_core_func->glGetUniformBlockIndex(program, name));
+  auto val (_core_func->glGetUniformBlockIndex(program, name));
   if (val == -1)
   {
     throw std::logic_error ("unknown uniform block " + std::string (name));
@@ -808,7 +818,7 @@ void OpenGL::context::uniformBlockBinding (GLuint program, GLuint uniformBlockIn
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
+  return _core_func->glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
 }
 
 void OpenGL::context::uniform1i (GLint location, GLint value)
@@ -816,26 +826,30 @@ void OpenGL::context::uniform1i (GLint location, GLint value)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glUniform1i (location, value);
+  return _core_func->glUniform1i (location, value);
 }
 void OpenGL::context::uniform1f (GLint location, GLfloat value)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glUniform1f (location, value);
+  return _core_func->glUniform1f (location, value);
 }
 
 void OpenGL::context::uniform1iv (GLint location, GLsizei count, GLint const* value)
 {
-  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
-  return _current_context->functions()->glUniform1iv(location, count, value);
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  return _core_func->glUniform1iv(location, count, value);
 }
 
 void OpenGL::context::uniform2iv (GLint location, GLsizei count, GLint const* value)
 {
-  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
-  return _current_context->functions()->glUniform2iv(location, count, value);
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  return _core_func->glUniform2iv(location, count, value);
 }
 
 void OpenGL::context::uniform2fv (GLint location, GLsizei count, GLfloat const* value)
@@ -843,28 +857,28 @@ void OpenGL::context::uniform2fv (GLint location, GLsizei count, GLfloat const* 
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glUniform2fv (location, count, value);
+  return _core_func->glUniform2fv (location, count, value);
 }
 void OpenGL::context::uniform3fv (GLint location, GLsizei count, GLfloat const* value)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glUniform3fv (location, count, value);
+  return _core_func->glUniform3fv (location, count, value);
 }
 void OpenGL::context::uniform4fv (GLint location, GLsizei count, GLfloat const* value)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glUniform4fv (location, count, value);
+  return _core_func->glUniform4fv (location, count, value);
 }
 void OpenGL::context::uniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, GLfloat const* value)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glUniformMatrix4fv (location, count, transpose, value);
+  return _core_func->glUniformMatrix4fv (location, count, transpose, value);
 }
 
 void OpenGL::context::clearStencil (GLint s)
@@ -872,28 +886,28 @@ void OpenGL::context::clearStencil (GLint s)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glClearStencil (s);
+  return _core_func->glClearStencil (s);
 }
 void OpenGL::context::stencilFunc (GLenum func, GLint ref, GLuint mask)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glStencilFunc (func, ref, mask);
+  return _core_func->glStencilFunc (func, ref, mask);
 }
 void OpenGL::context::stencilOp (GLenum sfail, GLenum dpfail, GLenum dppass)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glStencilOp (sfail, dpfail, dppass);
+  return _core_func->glStencilOp (sfail, dpfail, dppass);
 }
 void OpenGL::context::colorMask (GLboolean r, GLboolean g, GLboolean b, GLboolean a)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glColorMask (r, g, b, a);
+  return _core_func->glColorMask (r, g, b, a);
 }
 
 void OpenGL::context::polygonOffset (GLfloat factor, GLfloat units)
@@ -901,7 +915,7 @@ void OpenGL::context::polygonOffset (GLfloat factor, GLfloat units)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glPolygonOffset (factor, units);
+  return _core_func->glPolygonOffset (factor, units);
 }
 
 void OpenGL::context::genFramebuffers (GLsizei n, GLuint *ids)
@@ -909,21 +923,21 @@ void OpenGL::context::genFramebuffers (GLsizei n, GLuint *ids)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGenFramebuffers (n, ids);
+  return _core_func->glGenFramebuffers (n, ids);
 }
 void OpenGL::context::bindFramebuffer (GLenum target, GLuint framebuffer)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glBindFramebuffer (target, framebuffer);
+  return _core_func->glBindFramebuffer (target, framebuffer);
 }
 void OpenGL::context::framebufferTexture2D (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glFramebufferTexture2D (target, attachment, textarget, texture, level);
+  return _core_func->glFramebufferTexture2D (target, attachment, textarget, texture, level);
 }
 
 void OpenGL::context::genRenderbuffers (GLsizei n, GLuint *ids)
@@ -931,28 +945,28 @@ void OpenGL::context::genRenderbuffers (GLsizei n, GLuint *ids)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glGenRenderbuffers (n, ids);
+  return _core_func->glGenRenderbuffers (n, ids);
 }
 void OpenGL::context::bindRenderbuffer (GLenum target, GLuint renderbuffer)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glBindRenderbuffer (target, renderbuffer);
+  return _core_func->glBindRenderbuffer (target, renderbuffer);
 }
 void OpenGL::context::renderbufferStorage (GLenum target, GLenum internalformat, GLsizei width, GLsizei height)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glRenderbufferStorage (target, internalformat, width, height);
+  return _core_func->glRenderbufferStorage (target, internalformat, width, height);
 }
 void OpenGL::context::framebufferRenderbuffer (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glFramebufferRenderbuffer (target, attachment, renderbuffertarget, renderbuffer);
+  return _core_func->glFramebufferRenderbuffer (target, attachment, renderbuffertarget, renderbuffer);
 }
 
 void OpenGL::context::texBuffer(GLenum target, GLenum internalformat, GLuint buffer)
@@ -960,7 +974,7 @@ void OpenGL::context::texBuffer(GLenum target, GLenum internalformat, GLuint buf
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glTexBuffer(target, internalformat, buffer);
+  return _core_func->glTexBuffer(target, internalformat, buffer);
 }
 
 template<GLenum target>
@@ -1021,14 +1035,14 @@ void OpenGL::context::bufferData (GLenum target, GLsizeiptr size, GLvoid const* 
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glBufferData (target, size, data, usage);
+  return _core_func->glBufferData (target, size, data, usage);
 }
 void OpenGL::context::bufferSubData (GLenum target, GLintptr offset, GLsizeiptr size, GLvoid const* data)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _current_context->functions()->glBufferSubData (target, offset, size, data);
+  return _core_func->glBufferSubData (target, offset, size, data);
 }
 
 template<GLenum target>
@@ -1080,6 +1094,201 @@ void OpenGL::context::bufferSubData(GLuint buffer, GLintptr offset, std::vector<
 #endif
 }
 
+void OpenGL::context::drawElementsIndirect(GLenum mode, GLenum type, const void* indirect)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glDrawElementsIndirect(mode, type, indirect);
+}
+
+void OpenGL::context::createBuffersEXT(GLsizei amount, GLuint* buffers)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glCreateBuffers(amount, buffers);
+}
+
+void OpenGL::context::createTexturesEXT(GLenum target, GLsizei amount, GLuint* buffers)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glCreateTextures(target, amount, buffers);
+}
+
+template <typename T>
+void OpenGL::context::namedBufferSubDataEXT(GLuint buffer, GLintptr offset, std::vector<T> const& data)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glNamedBufferSubData(buffer, offset, data.size() * sizeof(T), data.data());
+}
+
+void OpenGL::context::namedBufferSubDataEXT(GLuint buffer, GLintptr offset, GLsizeiptr size, GLvoid const* data)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glNamedBufferSubData(buffer, offset, size, data);
+}
+
+template <typename T>
+void OpenGL::context::namedBufferDataEXT(GLuint buffer, std::vector<T> const& data, GLenum usage)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glNamedBufferData(buffer, data.size(), data.data(), usage);
+}
+
+void OpenGL::context::namedBufferDataEXT(GLuint buffer, GLsizeiptr size, GLvoid const* data, GLenum usage)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glNamedBufferData(buffer, size, data, usage);
+}
+
+void OpenGL::context::namedTextureBufferEXT(GLuint texture, GLenum format, GLuint buffer)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureBuffer(texture, format, buffer);
+}
+
+void OpenGL::context::bindTextureUnitEXT(GLenum texUnit, GLuint buffer)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glBindTextureUnit(texUnit, buffer);
+}
+
+template <typename T>
+void OpenGL::context::bindTexturesEXT(GLenum texUnit, T const& textures)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glBindTextures(texUnit, textures.size(), textures.data());
+}
+
+void OpenGL::context::bindTexturesEXT(GLenum texUnit, GLsizei size, const GLuint* textures)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glBindTextures(texUnit, size, textures);
+}
+
+void OpenGL::context::namedTextureSubImage1DEXT(GLuint buffer, GLint level, GLint xOffset, GLint width, GLenum format, GLenum type, GLvoid const* pixels)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureSubImage1D(buffer, level, xOffset, width, format, type, pixels);
+}
+
+void OpenGL::context::namedTextureSubImage2DEXT(GLuint buffer, GLint level, GLint xOffset, GLint yOffset, GLint width, GLint height, GLenum format, GLenum type, GLvoid const* pixels)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureSubImage2D(buffer, level, xOffset, yOffset, width, height, format, type, pixels);
+}
+
+void OpenGL::context::namedTextureSubImage3DEXT(GLuint buffer, GLint level, GLint xOffset, GLint yOffset, GLint zOffset, GLint width, GLint height, GLint depth, GLenum format, GLenum type, GLvoid const* pixels)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureSubImage3D(buffer, level, xOffset, yOffset, zOffset, width, height, depth, format, type, pixels);
+}
+
+void OpenGL::context::namedTextureStorage1DEXT(GLuint buffer, GLsizei levels, GLenum format, GLint width)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureStorage1D(buffer, levels, format, width);
+}
+
+void OpenGL::context::namedTextureStorage2DEXT(GLuint buffer, GLsizei levels, GLenum format, GLint width, GLint height)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureStorage2D(buffer, levels, format, width, height);
+}
+
+void OpenGL::context::namedTextureStorage3DEXT(GLuint buffer, GLsizei levels, GLenum format, GLint width, GLint height, GLint depth)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureStorage3D(buffer, levels, format, width, height, depth);
+}
+
+void OpenGL::context::namedTextureCompressedSubImage1D(GLuint buffer, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void* data)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glCompressedTextureSubImage1D(buffer, level, xoffset, width, format, imageSize, data);
+}
+
+void OpenGL::context::namedTextureCompressedSubImage2D(GLuint buffer, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void* data)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glCompressedTextureSubImage2D(buffer, level, xoffset, yoffset, width, height, format, imageSize, data);
+}
+
+void OpenGL::context::namedTextureCompressedSubImage3D(GLuint buffer, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void* data)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glCompressedTextureSubImage3D(buffer, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+}
+
+void OpenGL::context::namedTextureParameteriEXT(GLuint buffer, GLenum pname, GLint param)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureParameteri(buffer, pname, param);
+}
+
+void OpenGL::context::namedTextureParameterfEXT(GLuint buffer, GLenum pname, GLfloat param)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureParameterf(buffer, pname, param);
+}
+
+void OpenGL::context::namedTextureParameterivEXT(GLuint buffer, GLenum pname, GLint const* params)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureParameteriv(buffer, pname, params);
+}
+
+void OpenGL::context::namedTextureParameterfvEXT(GLuint buffer, GLenum pname, GLfloat const* params)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glTextureParameterfv(buffer, pname, params);
+}
+
 template void OpenGL::context::bufferData<GL_ARRAY_BUFFER, float>(GLuint buffer, std::vector<float> const& data, GLenum usage);
 template void OpenGL::context::bufferData<GL_ARRAY_BUFFER, glm::vec2>(GLuint buffer, std::vector<glm::vec2> const& data, GLenum usage);
 template void OpenGL::context::bufferData<GL_ARRAY_BUFFER, glm::vec3>(GLuint buffer, std::vector<glm::vec3> const& data, GLenum usage);
@@ -1110,7 +1319,7 @@ void OpenGL::context::drawArraysInstanced(GLenum mode, GLint first, GLsizei coun
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
 
-  return _4_1_core_func->glDrawArraysInstanced (mode, first, count, instancecount);
+  return _core_func->glDrawArraysInstanced (mode, first, count, instancecount);
 }
 
 void OpenGL::context::genQueries(GLsizei n, GLuint* ids)
@@ -1118,7 +1327,7 @@ void OpenGL::context::genQueries(GLsizei n, GLuint* ids)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glGenQueries(n, ids);
+  return _core_func->glGenQueries(n, ids);
 }
 
 void OpenGL::context::deleteQueries(GLsizei n, GLuint* ids)
@@ -1126,7 +1335,7 @@ void OpenGL::context::deleteQueries(GLsizei n, GLuint* ids)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glDeleteQueries(n, ids);
+  return _core_func->glDeleteQueries(n, ids);
 }
 
 void OpenGL::context::beginQuery(GLenum target, GLuint id)
@@ -1134,7 +1343,7 @@ void OpenGL::context::beginQuery(GLenum target, GLuint id)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glBeginQuery(target, id);
+  return _core_func->glBeginQuery(target, id);
 }
 
 void OpenGL::context::endQuery(GLenum target)
@@ -1142,7 +1351,7 @@ void OpenGL::context::endQuery(GLenum target)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glEndQuery(target);
+  return _core_func->glEndQuery(target);
 }
 
 void OpenGL::context::getQueryObjectiv(GLuint id, GLenum pname, GLint* params)
@@ -1150,7 +1359,7 @@ void OpenGL::context::getQueryObjectiv(GLuint id, GLenum pname, GLint* params)
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
-  return _4_1_core_func->glGetQueryObjectiv(id, pname, params);
+  return _core_func->glGetQueryObjectiv(id, pname, params);
 }
 
 #endif //NOGGIT_CONTEXT_INL

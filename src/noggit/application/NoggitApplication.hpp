@@ -3,31 +3,12 @@
 #ifndef NOGGIT_APPLICATION_HPP
 #define NOGGIT_APPLICATION_HPP
 
-#include <memory>
-#include <filesystem>
-#include <ClientData.hpp>
-#include <noggit/ui/windows/noggitWindow/NoggitWindow.hpp>
 #include <noggit/application/Configuration/NoggitApplicationConfiguration.hpp>
-#include <noggit/application/Configuration/NoggitApplicationConfigurationReader.hpp>
-#include <noggit/application/Configuration/NoggitApplicationConfigurationWriter.hpp>
 #include <noggit/ui/windows/projectSelection/NoggitProjectSelectionWindow.hpp>
+
+#include <ClientData.hpp>
+
 #include <memory>
-#include <string>
-#include <vector>
-#include <string_view>
-#include <QtCore/QSettings>
-#include <QtGui/QOffscreenSurface>
-#include <QtOpenGL/QGLFormat>
-#include <QtCore/QDir>
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QFileDialog>
-#include <QtWidgets/QMessageBox>
-#include <QSplashScreen>
-#include <QJsonObject>
-#include <QJsonDocument>
-#include <string>
-#include <revision.h>
-#include <util/exception_to_string.hpp>
 
 namespace Noggit::Ui::Windows
 {

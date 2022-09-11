@@ -1,4 +1,5 @@
 #include <noggit/ui/windows/projectSelection/widgets/ProjectListItem.hpp>
+#include <QLabel>
 
 namespace Noggit::Ui::Widget
 {
@@ -6,11 +7,8 @@ namespace Noggit::Ui::Widget
   {
     auto layout = QGridLayout();
 
-    QIcon icon;
-    if (data.project_version == Project::ProjectVersion::WOTLK)
-      icon = QIcon(":/icon-wrath");
-    if (data.project_version == Project::ProjectVersion::SL)
-      icon = QIcon(":/icon-shadow");
+    QIcon icon = Project::ClientVersionFactory::GetIcon(data.project_version);
+
     _project_version_icon = new QLabel("", parent);
     _project_version_icon->setPixmap(icon.pixmap(QSize(48, 48)));
     _project_version_icon->setGeometry(0, 5, 64, 48);
@@ -34,11 +32,7 @@ namespace Noggit::Ui::Widget
     _project_directory_label->setGraphicsEffect(directory_effect);
     _project_directory_label->setAutoFillBackground(true);
 
-    QString version;
-    if (data.project_version == Project::ProjectVersion::WOTLK)
-      version = "Wrath Of The Lich King";
-    if (data.project_version == Project::ProjectVersion::SL)
-      version = "Shadowlands";
+    QString version = QString::fromStdString(Project::ClientVersionFactory::MapToStringVersion(data.project_version));
 
     _project_version_label = new QLabel(version, parent);
     _project_version_label->setGeometry(48, 35, max_width, 20);
@@ -81,7 +75,7 @@ namespace Noggit::Ui::Widget
 
   QString ProjectListItem::toCamelCase(const QString& s)
   {
-    QStringList parts = s.split(' ', QString::SkipEmptyParts);
+    QStringList parts = s.split(' ', Qt::SkipEmptyParts);
     for (int i = 0; i < parts.size(); ++i)
       parts[i].replace(0, 1, parts[i][0].toUpper());
 

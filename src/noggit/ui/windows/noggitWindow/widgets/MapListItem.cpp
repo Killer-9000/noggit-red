@@ -1,6 +1,7 @@
-#include <QListWidget>
 #include <noggit/ui/windows/noggitWindow/widgets/MapListItem.hpp>
 #include <noggit/ui/FontAwesome.hpp>
+#include <QLabel>
+#include <QListWidget>
 
 namespace Noggit::Ui::Widget
 {
@@ -8,25 +9,7 @@ namespace Noggit::Ui::Widget
   {
     auto layout = QGridLayout();
 
-    QIcon icon;
-    if (data.expansion_id == 0)
-      icon = QIcon(":/icon-classic");
-    if (data.expansion_id == 1)
-      icon = QIcon(":/icon-burning");
-    if (data.expansion_id == 2)
-      icon = QIcon(":/icon-wrath");
-    if (data.expansion_id == 3)
-      icon = QIcon(":/icon-cata");
-    if (data.expansion_id == 4)
-      icon = QIcon(":/icon-panda");
-    if (data.expansion_id == 5)
-      icon = QIcon(":/icon-warlords");
-    if (data.expansion_id == 6)
-      icon = QIcon(":/icon-legion");
-    if (data.expansion_id == 7)
-      icon = QIcon(":/icon-battle");
-    if (data.expansion_id == 8)
-      icon = QIcon(":/icon-shadow");
+    QIcon icon = Project::ClientVersionFactory::GetIcon((BlizzardArchive::ClientVersion)data.expansion_id);
 
     _map_icon = new QLabel("", parent);
     _map_icon->setPixmap(icon.pixmap(QSize(32, 32)));
@@ -51,19 +34,17 @@ namespace Noggit::Ui::Widget
     _map_id->setGraphicsEffect(directory_effect);
     _map_id->setAutoFillBackground(true);
 
-    auto instance_type = QString("Unknown");
-    if (data.map_type_id == 0)
-      instance_type = QString("Continent");
-    if (data.map_type_id == 1)
-      instance_type = QString("Dungeon");
-    if (data.map_type_id == 2)
-      instance_type = QString("Raid");
-    if (data.map_type_id == 3)
-      instance_type = QString("Battleground");
-    if (data.map_type_id == 4)
-      instance_type = QString("Arena");
-    if (data.map_type_id == 5)
-      instance_type = QString("Scenario");
+    QString instance_type;
+    switch (data.expansion_id)
+    {
+    case 0:  instance_type = QString("Continent"); break;
+    case 1:  instance_type = QString("Dungeon"); break;
+    case 2:  instance_type = QString("Raid"); break;
+    case 3:  instance_type = QString("Battleground"); break;
+    case 4:  instance_type = QString("Arena"); break;
+    case 5:  instance_type = QString("Scenario"); break;
+    default: instance_type = QString("Unknown");
+    }
 
     _map_instance_type = new QLabel(instance_type, this);
     _map_instance_type->setGeometry(150, 15, 125, 20);
@@ -112,7 +93,7 @@ namespace Noggit::Ui::Widget
 
   QString MapListItem::toCamelCase(const QString& s)
   {
-    QStringList parts = s.split(' ', QString::SkipEmptyParts);
+    QStringList parts = s.split(' ', Qt::SkipEmptyParts);
     for (int i = 0; i < parts.size(); ++i)
       parts[i].replace(0, 1, parts[i][0].toUpper());
 

@@ -83,18 +83,10 @@ namespace Noggit::Rendering
 
     bool operator< (const ModelRenderPass &m) const
     {
-      if (priority_plane < m.priority_plane)
-      {
-        return true;
-      }
-      else if (priority_plane > m.priority_plane)
-      {
-        return false;
-      }
+      if (priority_plane != m.priority_plane)
+        return priority_plane < m.priority_plane;
       else
-      {
         return blend_mode == m.blend_mode ? (ordering_thingy < m.ordering_thingy) : blend_mode < m.blend_mode;
-      }
     }
   };
 

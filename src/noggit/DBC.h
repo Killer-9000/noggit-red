@@ -74,7 +74,8 @@ public:
   static const size_t DataIDs = 7;    // uint[8]
 };
 
-class LightParamsDB : public DBCFile{
+class LightParamsDB : public DBCFile
+{
 public:
   LightParamsDB() :
     DBCFile("DBFilesClient\\LightParams.dbc")
@@ -194,8 +195,12 @@ extern LoadingScreensDB gLoadingScreensDB;
 extern LightDB gLightDB;
 extern LightParamsDB gLightParamsDB;
 extern LightSkyboxDB gLightSkyboxDB;
+
+// These get combined into LightData after MOP
+//extern LightDataDB gLightDataDB;
 extern LightIntBandDB gLightIntBandDB;
 extern LightFloatBandDB gLightFloatBandDB;
+
 extern GroundEffectDoodadDB gGroundEffectDoodadDB;
 extern GroundEffectTextureDB gGroundEffectTextureDB;
 extern LiquidTypeDB gLiquidTypeDB;

@@ -1,8 +1,8 @@
 ﻿// This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
 #include "CursorRender.hpp"
-#include "math/trig.hpp"
-#include "opengl/shader.hpp"
+#include <math/trig.hpp>
+#include <opengl/shader.hpp>
 
 namespace Noggit
 {

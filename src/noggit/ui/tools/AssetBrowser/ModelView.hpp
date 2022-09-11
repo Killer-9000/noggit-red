@@ -32,7 +32,7 @@ namespace Noggit
       explicit ModelViewer(QWidget* parent = nullptr
           , Noggit::NoggitRenderContext context = Noggit::NoggitRenderContext::ASSET_BROWSER);
 
-      void setModel(std::string const& filename) override;
+      void setModel(const std::string& filename) override;
       void setMoveSensitivity(float s) { _move_sensitivity = s / 30.0f; };
       float getMoveSensitivity() { return _move_sensitivity; };
       QStringList getDoodadSetNames(std::string const& filename);
@@ -48,7 +48,7 @@ namespace Noggit
     signals:
       void resized();
       void sensitivity_changed();
-      void model_set(std::string const& filename);
+      void model_set(const std::string& filename);
       void gl_data_unloaded();
 
     protected:
@@ -79,6 +79,8 @@ namespace Noggit
       void keyReleaseEvent(QKeyEvent* event) override;
       void keyPressEvent(QKeyEvent* event) override;
       void focusOutEvent(QFocusEvent* event) override;
+
+      bool _hasError = false;
 
     };
   }

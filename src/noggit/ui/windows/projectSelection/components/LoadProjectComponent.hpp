@@ -4,14 +4,15 @@
 #include <noggit/project/ApplicationProject.h>
 #include <noggit/ui/windows/projectSelection/NoggitProjectSelectionWindow.hpp>
 
-#include <algorithm>
-#include <cctype>
-#include <vector>
-#include <fstream>
-#include <algorithm>
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QTextStream>
+
+#include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <vector>
 
 namespace Noggit::Ui::Component
 {

@@ -373,6 +373,16 @@
              <height>32</height>
             </size>
            </property>
+		   <item>
+            <property name="text">
+             <string>Vanilla</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>The Burning Crusade</string>
+            </property>
+           </item>
            <item>
             <property name="text">
              <string>Wrath Of The Lich King</string>
@@ -380,9 +390,39 @@
            </item>
            <item>
             <property name="text">
+             <string>Cataclysm</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Mists Of Pandaria</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Warlords Of Draenor</string>
+            </property>
+           </item>
+	       <item>
+		    <property name="text">
+			 <string>Legion</string>
+		    </property>
+		   </item>
+           <item>
+            <property name="text">
+             <string>Battle For Azeroth</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
              <string>Shadowlands</string>
             </property>
            </item>
+		   <item>
+		    <property name="text">
+		     <string>Dragonflight</string>
+		    </property>
+		   </item>
           </widget>
          </item>
          <item>

@@ -54,6 +54,7 @@ public:
     scale = other.scale;
     extents[0] = other.extents[0];
     extents[1] = other.extents[1];
+    _transform_mat = other._transform_mat;
     _transform_mat_inverted =  other._transform_mat_inverted;
     _context = other._context;
     uid = other.uid;
@@ -127,13 +128,12 @@ public:
       , Noggit::NoggitRenderContext context );
 
   wmo_doodad_instance(wmo_doodad_instance const& other)
-  : ModelInstance(other.model->file_key(), other._context)
+  : ModelInstance(reinterpret_cast<const ModelInstance&>(other))
   , doodad_orientation(other.doodad_orientation)
   , world_pos(other.world_pos)
   , _need_matrix_update(other._need_matrix_update)
   {
-
-  };
+  }
 
   wmo_doodad_instance& operator= (wmo_doodad_instance const& other) = delete;
 

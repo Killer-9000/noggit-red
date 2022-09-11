@@ -175,6 +175,8 @@ namespace Noggit
       ui->_nativeMenubar->setChecked(_settings->value("nativeMenubar", true).toBool());
       ui->_additional_file_loading_log->setChecked(
           _settings->value("additional_file_loading_log", false).toBool());
+      ui->AutoSaveIntervalField->setValue(_settings->value("auto_save_interval", 120).toUInt());
+      ui->AutoSaveWarningField->setValue(_settings->value("auto_save_warning", 10).toUInt());
       ui->_keyboard_locale->setCurrentText(_settings->value("keyboard_locale", "QWERTY").toString());
       ui->_theme->setCurrentText(_settings->value("theme", "Dark").toString());
 
@@ -233,6 +235,8 @@ namespace Noggit
       _settings->setValue("unload_interval", ui->_adt_unload_check_interval->value());
       _settings->setValue("uid_startup_check", ui->_uid_cb->isChecked());
       _settings->setValue("additional_file_loading_log", ui->_additional_file_loading_log->isChecked());
+      _settings->setValue("auto_save_interval", ui->AutoSaveIntervalField->value());
+      _settings->setValue("auto_save_warning", ui->AutoSaveWarningField->value());
       _settings->setValue("keyboard_locale", ui->_keyboard_locale->currentText());
       _settings->setValue("systemWindowFrame", ui->_systemWindowFrame->isChecked());
       _settings->setValue("nativeMenubar", ui->_nativeMenubar->isChecked());

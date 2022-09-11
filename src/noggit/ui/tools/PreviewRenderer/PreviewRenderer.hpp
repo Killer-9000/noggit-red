@@ -1,16 +1,16 @@
 #ifndef NOGGIT_PREVIEWRENDERER_HPP
 #define NOGGIT_PREVIEWRENDERER_HPP
 
-#include <noggit/Camera.hpp>
-#include <noggit/WMOInstance.h>
-#include <noggit/ModelInstance.h>
-#include <noggit/WMO.h>
-#include <noggit/Model.h>
-#include <noggit/ContextObject.hpp>
 #include <noggit/BoolToggleProperty.hpp>
-#include <noggit/ui/tools/ViewportManager/ViewportManager.hpp>
+#include <noggit/Camera.hpp>
+#include <noggit/ContextObject.hpp>
+#include <noggit/Model.h>
+#include <noggit/ModelInstance.h>
+#include <noggit/rendering/LiquidTextureManager.hpp>
 #include <noggit/rendering/Primitives.hpp>
-#include "noggit/rendering/LiquidTextureManager.hpp"
+#include <noggit/ui/tools/ViewportManager/ViewportManager.hpp>
+#include <noggit/WMO.h>
+#include <noggit/WMOInstance.h>
 
 #include <QOpenGLWidget>
 #include <QSettings>
@@ -35,9 +35,26 @@ class PreviewRenderer : public Noggit::Ui::Tools::ViewportManager::Viewport
     void resetCamera(float x = 0.f, float y = 0.f, float z = 0.f, float roll = 0.f, float yaw = 120.f, float pitch = 20.f);
     QPixmap* renderToPixmap();
 
-    virtual void setModel(std::string const& filename);
-    void setModelOffscreen(std::string const& filename);
-    virtual void setPrefab(std::string const& filename) {};
+    // Will clear all other models, and set just the one.
+    virtual void setModel(const std::string& filename);
+    void setModelOffscreen(const std::string& filename);
+
+    // Will add onto the list of models to render.
+    virtual void addModel(const std::string& filename, glm::vec3 offset = glm::vec3(0, 0, 0), glm::vec3 rotation = glm::vec3(0, 0, 0), float scale = 1.0f);
+    void addModelOffscreen(const std::string& filename, glm::vec3 offset = glm::vec3(0, 0, 0), glm::vec3 rotation = glm::vec3(0, 0, 0), float scale = 1.0f);
+
+    virtual void clearModels()
+    {
+      OpenGL::context::save_current_context const context_save(::gl);
+      _offscreen_context.makeCurrent(&_offscreen_surface);
+      OpenGL::context::scoped_setter const context_set(::gl, &_offscreen_context);
+
+      _filenames.clear();
+      _model_instances.clear();
+      _wmo_instances.clear();
+    }
+
+    virtual void setPrefab(const std::string& filename) {};
 
     void setLightDirection(float y, float z);
 
@@ -55,7 +72,7 @@ class PreviewRenderer : public Noggit::Ui::Tools::ViewportManager::Viewport
     bool _offscreen_mode = true;
     Noggit::Camera _camera;
     QSettings* _settings;
-    std::string _filename;
+    std::vector<std::string> _filenames;
 
     std::unique_ptr<OpenGL::program> _m2_program;
     std::unique_ptr<OpenGL::program> _m2_instanced_program;
