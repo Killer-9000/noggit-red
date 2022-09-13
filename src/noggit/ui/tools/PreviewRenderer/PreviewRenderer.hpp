@@ -24,8 +24,7 @@
 
 namespace Noggit::Ui::Tools
 {
-
-class PreviewRenderer : public Noggit::Ui::Tools::ViewportManager::Viewport
+	class PreviewRenderer : public Noggit::Ui::Tools::ViewportManager::Viewport
   {
     Q_OBJECT
 

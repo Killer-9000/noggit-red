@@ -2,7 +2,7 @@
 
 #pragma once
 #include <opengl/types.hpp>
-#include <QtGui/QOpenGLFunctions_4_5_Core>
+#include <QtOpenGL/QOpenGLFunctions_4_5_Core>
 #include <array>
 
 // NOGGIT_FORCEINLINE ---------------------------------------------//
@@ -158,9 +158,7 @@ namespace OpenGL
     NOGGIT_FORCEINLINE void genPrograms (GLsizei programs, GLuint*);
     NOGGIT_FORCEINLINE void deletePrograms (GLsizei programs, GLuint*);
     NOGGIT_FORCEINLINE void bindProgram (GLenum, GLuint);
-    NOGGIT_FORCEINLINE void programString (GLenum target, GLenum format, GLsizei len, GLvoid const* pointer);
     NOGGIT_FORCEINLINE void getProgramiv (GLuint program, GLenum pname, GLint* params);
-    NOGGIT_FORCEINLINE void programLocalParameter4f (GLenum, GLuint, GLfloat, GLfloat, GLfloat, GLfloat);
 
     NOGGIT_FORCEINLINE void getBooleanv (GLenum, GLboolean*);
     NOGGIT_FORCEINLINE void getDoublev (GLenum, GLdouble*);
@@ -245,16 +243,16 @@ namespace OpenGL
 
     QOpenGLContext* getCurrentContext();
 
-    NOGGIT_FORCEINLINE void bufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void* data);
+    NOGGIT_FORCEINLINE void bufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, GLvoid const* data);
 
     template<GLenum target>
-    NOGGIT_FORCEINLINE void bufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data);
+    NOGGIT_FORCEINLINE void bufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size, GLvoid const* data);
 
     template<GLenum target, typename T>
     NOGGIT_FORCEINLINE void bufferSubData(GLuint buffer, GLintptr offset, const std::vector<T> &data);
 
 
-    // ========== [[ Bindless/Named calls ]] ==========
+    // ========== [[ Named calls ]] ==========
 
     NOGGIT_FORCEINLINE void drawElementsIndirect(GLenum mode, GLenum type, const void* indirect);
 

@@ -4,8 +4,8 @@
 
 #include <functional>
 
-#include <QtWidgets/QActionGroup>
 #include <QtWidgets/QToolBar>
+#include <QActionGroup>
 
 #include <noggit/MapView.h>
 #include <noggit/ui/FontNoggit.hpp>

@@ -1140,7 +1140,7 @@ void updateQtFrame_internal(const HWND handle)
             handle, WinNativeEventFilter::SystemMetric::TitleBarHeight);
 #ifdef QT_WIDGETS_LIB
         const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
-        if (widget && widget->isTopLevel()) {
+        if (widget && widget->isWindow()) {
             QWindow *window = widget->windowHandle();
             if (window) {
                 WinNativeEventFilter::updateQtFrame(window, tbh);
@@ -1186,7 +1186,7 @@ QString getCurrentScreenIdentifier(const HWND handle)
         QScreen *currentScreen = nullptr;
 #ifdef QT_WIDGETS_LIB
         const QWidget *widget = QWidget::find(reinterpret_cast<WId>(handle));
-        if (widget && widget->isTopLevel()) {
+        if (widget && widget->isWindow()) {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
             currentScreen = widget->screen();
 #else
@@ -1833,7 +1833,7 @@ bool WinNativeEventFilter::nativeEventFilter(const QByteArray &eventType,
 #ifdef QT_WIDGETS_LIB
                         const auto widget = qobject_cast<QWidget *>(object);
                         if (widget) {
-                            const QPoint pos = widget->mapToGlobal({0, 0});
+                            const QPoint pos = widget->mapToGlobal(QPoint(0, 0));
                             if (QRectF(pos.x() * dpr,
                                        pos.y() * dpr,
                                        widget->width() * dpr,
@@ -2430,7 +2430,7 @@ bool WinNativeEventFilter::setBlurEffectEnabled(void *handle,
 #ifdef QT_WIDGETS_LIB
         // Is it possible to set a palette to a QWindow?
         QWidget *widget = QWidget::find(reinterpret_cast<WId>(hwnd));
-        if (widget && widget->isTopLevel()) {
+        if (widget && widget->isWindow()) {
             // Qt will paint a solid white background to the window,
             // it will cover the blurred effect, so we need to
             // make the background become totally transparent. Achieve

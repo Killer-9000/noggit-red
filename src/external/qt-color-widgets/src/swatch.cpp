@@ -99,7 +99,7 @@ public:
     void dropEvent(QDropEvent* event)
     {
         // Find the output location
-        drop_index = owner->indexAt(event->pos());
+        drop_index = owner->indexAt(event->position().toPoint());
         if ( drop_index == -1 )
             drop_index = palette.count();
 
@@ -122,20 +122,20 @@ public:
             if ( palette.columns() == 1 || forced_columns == 1 )
             {
                 // Dragged to the last quarter of the size of the square, add after
-                if ( event->posF().y() >= drop_rect.top() + drop_rect.height() * 3.0 / 4 )
+                if ( event->position().y() >= drop_rect.top() + drop_rect.height() * 3.0 / 4 )
                     drop_index++;
                 // Dragged to the middle of the square, overwrite existing color
-                else if ( event->posF().x() > drop_rect.top() + drop_rect.height() / 4 &&
+                else if ( event->position().x() > drop_rect.top() + drop_rect.height() / 4 &&
                         ( event->dropAction() != Qt::MoveAction || event->source() != owner ) )
                     drop_overwrite = true;
             }
             else
             {
                 // Dragged to the last quarter of the size of the square, add after
-                if ( event->posF().x() >= drop_rect.left() + drop_rect.width() * 3.0 / 4 )
+                if ( event->position().x() >= drop_rect.left() + drop_rect.width() * 3.0 / 4 )
                     drop_index++;
                 // Dragged to the middle of the square, overwrite existing color
-                else if ( event->posF().x() > drop_rect.left() + drop_rect.width() / 4 &&
+                else if ( event->position().x() > drop_rect.left() + drop_rect.width() / 4 &&
                         ( event->dropAction() != Qt::MoveAction || event->source() != owner ) )
                     drop_overwrite = true;
             }
@@ -562,7 +562,7 @@ void Swatch::mouseDoubleClickEvent(QMouseEvent *event)
 
 void Swatch::wheelEvent(QWheelEvent* event)
 {
-    if ( event->delta() > 0 )
+    if ( !event->angleDelta().isNull() )
         p->selected = qMin(p->selected + 1, p->palette.count() - 1);
     else if ( p->selected == -1 )
             p->selected = p->palette.count() - 1;

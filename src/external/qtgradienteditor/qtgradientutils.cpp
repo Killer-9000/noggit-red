@@ -46,6 +46,7 @@
 #include <QConicalGradient>
 #include <QtXml/QDomDocument>
 #include <QtCore/QDebug>
+#include <QVector>
 
 QT_BEGIN_NAMESPACE
 

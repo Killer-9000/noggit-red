@@ -385,7 +385,7 @@ QWidgetAction* MapView::createTextSeparator(const QString& text)
   return separator;
 }
 
-void MapView::enterEvent(QEvent* event)
+void MapView::enterEvent(QEnterEvent* event)
 {
   // check if noggit is the currently active windows
   if (static_cast<QApplication*>(QApplication::instance())->applicationState() & Qt::ApplicationActive)
@@ -2583,10 +2583,15 @@ MapView::MapView( math::degrees camera_yaw0
   _startup_time.start();
 
   int _fps_limit = _settings->value("fps_limit", 60).toInt();
-  int _fps_calcul = (int)((1.f / (float)_fps_limit) * 1000.f);
-  std::cout << "FPS limit is set to : " << _fps_limit << " (" << _fps_calcul << ")" << std::endl;
+  if (_fps_limit != 0)
+  {
+    int _fps_calcul = (int)((1.f / (float)_fps_limit) * 1000.f);
+    std::cout << "FPS limit is set to : " << _fps_limit << " (" << _fps_calcul << ")" << std::endl;
+    _update_every_event_loop.start(_fps_calcul);
+  }
+  else
+    _update_every_event_loop.start();
 
-  _update_every_event_loop.start (_fps_calcul);
   connect(&_update_every_event_loop, &QTimer::timeout,[=]{ _needs_redraw = true; update(); });
   createGUI();
 }

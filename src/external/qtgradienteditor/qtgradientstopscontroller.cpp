@@ -44,6 +44,7 @@
 #include "qtgradientstopsmodel.h"
 
 #include <QtCore/QTimer>
+#include <QVector>
 
 QT_BEGIN_NAMESPACE
 

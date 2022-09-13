@@ -4,7 +4,7 @@
 
 #include <functional>
 
-#include <QtWidgets/QActionGroup>
+#include <QActionGroup>
 #include <QtWidgets/QToolBar>
 
 #include <noggit/tool_enums.hpp>

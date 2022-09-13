@@ -141,7 +141,7 @@ void FramelessWindowsManager::moveWindowToDesktopCenter(QObject *window, const b
 #ifdef QT_WIDGETS_LIB
         else if (window->isWidgetType()) {
             const auto widget = qobject_cast<QWidget *>(window);
-            if (widget && widget->isTopLevel()) {
+            if (widget && widget->isWindow()) {
                 windowSize = widget->size();
                 screenSize = getDesktopAvailableSize(widget);
                 screenGeometry = getDesktopAvailableGeometry(widget);
@@ -165,7 +165,7 @@ void FramelessWindowsManager::moveWindowToDesktopCenter(QObject *window, const b
 #ifdef QT_WIDGETS_LIB
         else if (window->isWidgetType()) {
             const auto widget = qobject_cast<QWidget *>(window);
-            if (widget && widget->isTopLevel()) {
+            if (widget && widget->isWindow()) {
                 widget->move(x, y);
             }
         }

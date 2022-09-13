@@ -278,34 +278,9 @@ void WMOGroupRender::draw(OpenGL::Scoped::use_program& wmo_shader
 
   gl.bindTextureUnitEXT(0, _render_batch_tex);
 
-  //bool backface_cull = true;
-  //gl.enable(GL_CULL_FACE);
-
   for (auto& draw_call : _draw_calls)
   {
-    //if (backface_cull != draw_call.backface_cull)
-    //{
-    // if (draw_call.backface_cull)
-    //   gl.enable(GL_CULL_FACE);
-    // else
-    //   gl.disable(GL_CULL_FACE);
-
-    // backface_cull = draw_call.backface_cull;
-    //}
-
-    // replace with texture buffer
-
-    GLsizei count = 0;
-    while (draw_call.samplers[count] != UINT32_MAX && count < draw_call.samplers.size()) { count++; }
-    gl.bindTexturesEXT(1, count, draw_call.samplers.data());
-    //for(std::size_t i = 0; i < draw_call.samplers.size(); ++i)
-    //{
-    //  if (draw_call.samplers[i] < 0)
-    //    break;
-
-    //  gl.bindTextureUnitEXT(1 + i, draw_call.samplers[i]);
-    //}
-
+    gl.bindTexturesEXT(1, draw_call.n_used_samplers, draw_call.samplers.data());
     gl.drawElements (GL_TRIANGLES, draw_call.index_count, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(sizeof(std::uint16_t)*draw_call.index_start));
   }
 }

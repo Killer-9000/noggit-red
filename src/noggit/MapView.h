@@ -335,7 +335,7 @@ private:
   virtual void keyReleaseEvent (QKeyEvent*) override;
   virtual void keyPressEvent (QKeyEvent*) override;
   virtual void focusOutEvent (QFocusEvent*) override;
-  virtual void enterEvent(QEvent*) override;
+  virtual void enterEvent(QEnterEvent*) override;
 
   Noggit::Ui::Windows::NoggitWindow* _main_window;
 

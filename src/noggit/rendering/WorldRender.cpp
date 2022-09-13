@@ -246,31 +246,23 @@ void WorldRender::draw (glm::mat4x4 const& model_view
       mcnk_shader.uniform("camera", glm::vec3(camera_pos.x, camera_pos.y, camera_pos.z));
       mcnk_shader.uniform("animtime", static_cast<int>(_world->animtime));
 
+      mcnk_shader.uniform("draw_cursor_circle", static_cast<int>(cursor_type));
       if (cursor_type != CursorType::NONE)
       {
-        mcnk_shader.uniform("draw_cursor_circle", static_cast<int>(cursor_type));
         mcnk_shader.uniform("cursor_position", glm::vec3(cursor_pos.x, cursor_pos.y, cursor_pos.z));
         mcnk_shader.uniform("cursorRotation", cursorRotation);
         mcnk_shader.uniform("outer_cursor_radius", brush_radius);
         mcnk_shader.uniform("inner_cursor_ratio", inner_radius_ratio);
         mcnk_shader.uniform("cursor_color", cursor_color);
       }
-      else
-      {
-        mcnk_shader.uniform("draw_cursor_circle", 0);
-      }
 
       gl.bindVertexArray(_mapchunk_vao);
       gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, _mapchunk_index);
 
-      for (auto& pair : _world->_loaded_tiles_buffer)
+      for (auto& [_, tile] : _world->_loaded_tiles_buffer)
       {
-        MapTile* tile = pair.second;
-
         if (!tile)
-        {
           break;
-        }
 
         if (minimap_render)
           tile->renderer()->setOccluded(false);
@@ -288,7 +280,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
         );
 
         _world->_n_rendered_tiles++;
-
       }
 
       gl.bindVertexArray(0);
@@ -305,9 +296,7 @@ void WorldRender::draw (glm::mat4x4 const& model_view
   }
 
   if (use_ref_pos)
-  {
     _sphere_render.draw(mvp, ref_pos, cursor_color, 0.3f);
-  }
 
   if (terrainMode == editing_mode::ground && ground_editing_brush == eTerrainType_Vertex)
   {
@@ -315,9 +304,7 @@ void WorldRender::draw (glm::mat4x4 const& model_view
     gl.pointSize(std::max(0.001f, 10.0f - (1.25f * size / CHUNKSIZE)));
 
     for (glm::vec3 const* pos : _world->_vertices_selected)
-    {
       _sphere_render.draw(mvp, *pos, glm::vec4(1.f, 0.f, 0.f, 1.f), 0.5f);
-    }
 
     _sphere_render.draw(mvp, _world->vertexCenter(), cursor_color, 2.f);
   }
@@ -330,24 +317,12 @@ void WorldRender::draw (glm::mat4x4 const& model_view
   // frame counter loop. pretty hacky but works
   // this is used to make sure no object is processed more than once within a frame
   static int frame = 0;
+  frame = (frame + 1) % 0xFFFFFFFF;
 
-  if (frame == std::numeric_limits<int>::max())
+  for (auto& [_, tile] : _world->_loaded_tiles_buffer)
   {
-    frame = 0;
-  }
-  else
-  {
-    frame++;
-  }
-
-  for (auto& pair : _world->_loaded_tiles_buffer)
-  {
-    MapTile* tile = pair.second;
-
     if (!tile)
-    {
       break;
-    }
 
     if (minimap_render)
       tile->renderer()->setOccluded(false);
@@ -360,7 +335,6 @@ void WorldRender::draw (glm::mat4x4 const& model_view
     if (tile->camDist() > _cull_distance)
       continue;
 
-
     // TODO: subject to potential generalization
     for (auto& pair : tile->getObjectInstances())
     {
@@ -372,31 +346,26 @@ void WorldRender::draw (glm::mat4x4 const& model_view
         // otherwise we only allocate for a half
 
         if (tile->renderer()->objectsFrustumCullTest() > 1)
-        {
           instances.reserve(instances.size() + pair.second.size());
-        }
         else
-        {
           instances.reserve(instances.size() + pair.second.size() / 2);
-        }
 
 
         for (auto& instance : pair.second)
         {
+          if (!instance)
+            continue;
+
           // do not render twice the cross-referenced objects twice
           if (instance->frame == frame)
-          {
             continue;
-          }
 
           instance->frame = frame;
 
           auto m2_instance = static_cast<ModelInstance*>(instance);
 
           if ((tile->renderer()->objectsFrustumCullTest() > 1 || m2_instance->isInFrustum(frustum)) && m2_instance->isInRenderDist(_cull_distance, camera_pos, display))
-          {
             instances.push_back(m2_instance->transformMatrix());
-          }
 
         }
 
@@ -407,16 +376,15 @@ void WorldRender::draw (glm::mat4x4 const& model_view
         // otherwise we only allocate for a half
 
         if (tile->renderer()->objectsFrustumCullTest() > 1)
-        {
           wmos_to_draw.reserve(wmos_to_draw.size() + pair.second.size());
-        }
         else
-        {
           wmos_to_draw.reserve(wmos_to_draw.size() + pair.second.size() / 2);
-        }
 
         for (auto& instance : pair.second)
         {
+          if (!instance)
+            continue;
+
           // do not render twice the cross-referenced objects twice
           if (instance->frame == frame)
           {

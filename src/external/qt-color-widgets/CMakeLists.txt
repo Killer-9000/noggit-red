@@ -57,15 +57,15 @@ qt-color-widgets/hue_slider.hpp
 qt-color-widgets/swatch.hpp
 )
 
-qt5_wrap_cpp(SOURCES ${HEADERS})
-qt5_wrap_ui(SOURCES src/color_dialog.ui src/color_palette_widget.ui)
-qt5_add_resources(SOURCES src/color_widgets.qrc)
+qt6_wrap_cpp(SOURCES ${HEADERS})
+qt6_wrap_ui(SOURCES src/color_dialog.ui src/color_palette_widget.ui)
+qt6_add_resources(SOURCES src/color_widgets.qrc)
 
 # Library
-add_library(ColorWidgets-qt5 ${SOURCES})
-target_link_libraries(ColorWidgets-qt5 Qt5::Widgets)
-target_include_directories (ColorWidgets-qt5 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories (ColorWidgets-qt5 PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+add_library(ColorWidgets-qt6 ${SOURCES})
+target_link_libraries(ColorWidgets-qt6 Qt6::Widgets)
+target_include_directories (ColorWidgets-qt6 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (ColorWidgets-qt6 PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 add_compiler_flag_if_supported (ColorWidgets_CXX_FLAGS "-Wno-error=deprecated-declarations")
-target_compile_options (ColorWidgets-qt5 PRIVATE ${ColorWidgets_CXX_FLAGS})
+target_compile_options (ColorWidgets-qt6 PRIVATE ${ColorWidgets_CXX_FLAGS})

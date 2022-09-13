@@ -16,7 +16,7 @@
 #include <QtCore/QSettings>
 #include <QByteArray>
 #include <QTextStream>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QFile>
 
 #ifdef USE_MYSQL_UID_STORAGE
@@ -230,15 +230,16 @@ void MapIndex::save()
     SetChunkHeader(wdtFile, curPos, 'MPHD', sizeof(MPHD));
     curPos += 8;
 
-  mphd.flags = 0;
-  mphd.something = 0;
-  if (mBigAlpha)
+    mphd.flags = 0;
+    mphd.something = 0;
+    if (mBigAlpha)
       mphd.flags |= 4;
-  if (_sort_models_by_size_class)
+    if (_sort_models_by_size_class)
       mphd.flags |= 8;
 
-  wdtFile.Insert(curPos, sizeof(MPHD), (char*)&mphd);
-  curPos += sizeof(MPHD);
+    wdtFile.Insert(curPos, sizeof(MPHD), (char*)&mphd);
+    curPos += sizeof(MPHD);
+  }
 
   // MAIN
   {
@@ -281,7 +282,7 @@ void MapIndex::save()
   }
 
   BlizzardArchive::ClientFile f(filename.str(), Noggit::Application::NoggitApplication::instance()->clientData(),
-                                BlizzardArchive::ClientFile::NEW_FILE);
+    BlizzardArchive::ClientFile::NEW_FILE);
   f.setBuffer(wdtFile.data);
   f.save();
   f.close();
@@ -1105,7 +1106,7 @@ void MapIndex::loadMinimapMD5translate()
       continue;
     }
 
-    static const QRegExp regex = QRegExp("[\t]");
+    static const auto regex = QRegularExpression("[\t]");
     QStringList line_split = line.split(regex);
 
     if (cur_dir.length())

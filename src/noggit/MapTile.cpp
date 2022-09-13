@@ -1403,27 +1403,27 @@ void MapTile::setVertexColorImage(QImage const& image, int mode)
             case 1: // Add
             {
               auto color = image.pixelColor((k * 16) + x, (l * 16) + y);
-              colors[idx].x =  std::min(2.0, std::max(0.0, colors[idx].x + color.redF() * 2.f));
-              colors[idx].y =  std::min(2.0, std::max(0.0, colors[idx].y + color.greenF() * 2.f));
-              colors[idx].z =  std::min(2.0, std::max(0.0, colors[idx].z + color.blueF() * 2.f));
+              colors[idx].x =  std::min(2.0f, std::max(0.0f, colors[idx].x + color.redF() * 2.f));
+              colors[idx].y =  std::min(2.0f, std::max(0.0f, colors[idx].y + color.greenF() * 2.f));
+              colors[idx].z =  std::min(2.0f, std::max(0.0f, colors[idx].z + color.blueF() * 2.f));
               break;
             }
 
             case 2: // Subtract
             {
               auto color = image.pixelColor((k * 16) + x, (l * 16) + y);
-              colors[idx].x =  std::min(2.0, std::max(0.0, colors[idx].x - color.redF() * 2.f));
-              colors[idx].y =  std::min(2.0, std::max(0.0, colors[idx].y - color.greenF() * 2.f));
-              colors[idx].z =  std::min(2.0, std::max(0.0, colors[idx].z - color.blueF() * 2.f));
+              colors[idx].x =  std::min(2.0f, std::max(0.0f, colors[idx].x - color.redF() * 2.f));
+              colors[idx].y =  std::min(2.0f, std::max(0.0f, colors[idx].y - color.greenF() * 2.f));
+              colors[idx].z =  std::min(2.0f, std::max(0.0f, colors[idx].z - color.blueF() * 2.f));
               break;
             }
 
             case 3: // Multiply
             {
               auto color = image.pixelColor((k * 16) + x, (l * 16) + y);
-              colors[idx].x =  std::min(2.0, std::max(0.0, colors[idx].x * color.redF() * 2.f));
-              colors[idx].y =  std::min(2.0, std::max(0.0, colors[idx].y * color.greenF() * 2.f));
-              colors[idx].z =  std::min(2.0, std::max(0.0, colors[idx].z * color.blueF() * 2.f));
+              colors[idx].x =  std::min(2.0f, std::max(0.0f, colors[idx].x * color.redF() * 2.f));
+              colors[idx].y =  std::min(2.0f, std::max(0.0f, colors[idx].y * color.greenF() * 2.f));
+              colors[idx].z =  std::min(2.0f, std::max(0.0f, colors[idx].z * color.blueF() * 2.f));
               break;
             }
           }

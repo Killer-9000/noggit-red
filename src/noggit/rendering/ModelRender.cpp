@@ -193,15 +193,14 @@ void ModelRender::draw(glm::mat4x4 const& model_view
     OpenGL::Scoped::vao_binder const _ (_vao);
 
     {
-      OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const transform_binder (_transform_buffer);
-      gl.bufferData(GL_ARRAY_BUFFER, instances.size() * sizeof(::glm::mat4x4), instances.data(), GL_DYNAMIC_DRAW);
+      //OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const transform_binder (_transform_buffer);
+      gl.namedBufferDataEXT(_transform_buffer, instances, GL_DYNAMIC_DRAW);
       //m2_shader.attrib("transform", 0, 1);
     }
 
     if (_model->animBones)
     {
-      gl.activeTexture(GL_TEXTURE0);
-      gl.bindTexture(GL_TEXTURE_BUFFER, _bone_matrices_buf_tex);
+      gl.bindTextureUnitEXT(0, _bone_matrices_buf_tex);
       m2_shader.uniform("anim_bones", true);
     }
     else

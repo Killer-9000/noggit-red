@@ -18,8 +18,8 @@ else()
     set(CMAKE_DEBUG_POSTFIX _debug)
 endif()
 
-find_package(Qt5 COMPONENTS Gui REQUIRED)
-find_package(Qt5 COMPONENTS Widgets Quick)
+find_package(Qt6 COMPONENTS Gui REQUIRED)
+find_package(Qt6 COMPONENTS Widgets Quick)
 
 set(SOURCES
     framelesshelper_global.h
@@ -27,7 +27,7 @@ set(SOURCES
     framelesswindowsmanager.cpp
 )
 
-if(Qt5Quick_FOUND)
+if(Qt6Quick_FOUND)
     list(APPEND SOURCES
         framelessquickhelper.h
         framelessquickhelper.cpp
@@ -81,10 +81,10 @@ if(WIN32)
     )
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt::GuiPrivate)
-if(Qt5Widgets_FOUND)
+if(Qt6Widgets_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE Qt::Widgets)
 endif()
-if(Qt5Quick_FOUND)
+if(Qt6Quick_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE Qt::Quick)
 endif()
 target_include_directories(${PROJECT_NAME} PUBLIC

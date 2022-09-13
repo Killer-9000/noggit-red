@@ -109,7 +109,7 @@ FIND_PACKAGE(Json REQUIRED)
 FIND_PACKAGE(FastNoise REQUIRED)
 
 FIND_PACKAGE(Sol2 REQUIRED)
-FIND_PACKAGE(Qt5 COMPONENTS Widgets OpenGL OpenGLExtensions Network Xml REQUIRED)
+FIND_PACKAGE(Qt6 COMPONENTS Widgets OpenGL OpenGLWidgets Gui Xml REQUIRED)
 
 IF(USE_SQL)
   FIND_LIBRARY(MYSQL_LIBRARY NAMES libmysql
@@ -171,7 +171,7 @@ INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/imguipiemenu")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/qtgradienteditor")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/blizzard-database-library/include")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/${EXTERNAL_SOURCE_DIR}/blizzard-archive-library/include")
-INCLUDE_DIRECTORIES(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${Qt6Gui_PRIVATE_INCLUDE_DIRS})
 
 #Load noggit source files
 collect_files(math_sources src/math FALSE "*.cpp" "")
@@ -206,9 +206,9 @@ IF(WIN32)
 ENDIF(WIN32)
 
 collect_files(resource_files resources FALSE "*.qrc" "")
-qt5_add_resources(compiled_resource_files ${resource_files})
+qt6_add_resources(compiled_resource_files ${resource_files})
 collect_files(ui_files src TRUE "*.ui" "")
-qt5_wrap_ui(compiled_ui_files ${ui_files})
+qt6_wrap_ui(compiled_ui_files ${ui_files})
 
 assign_specific_source_group("noggit/ui/generated" ${compiled_ui_files})
 assign_specific_source_group("util/win" ${os_sources} ${os_headers})
@@ -221,22 +221,22 @@ assign_source_group(
   ${database_headers}
   ${database_sources}
   ${external_headers}
-  ${external_sources} 
-  ${gradienteditor_headers} 
+  ${external_sources}
+  ${gradienteditor_headers}
   ${gradienteditor_sources}
   ${imguipiemenu_headers}
   ${imguipiemenu_sources}
-  ${imguizmo_headers} 
+  ${imguizmo_headers}
   ${imguizmo_sources}
   ${math_headers}
-  ${math_sources} 
+  ${math_sources}
   ${noggit_root_headers}
-  ${noggit_root_sources} 
+  ${noggit_root_sources}
   ${opengl_headers}
-  ${opengl_sources} 
-  ${png_blp_headers} 
+  ${opengl_sources}
+  ${png_blp_headers}
   ${png_blp_sources}
-  ${red_headers} 
+  ${red_headers}
   ${red_sources}
   ${resource_files}
   ${shaders}
@@ -304,16 +304,17 @@ ENDIF()
 TARGET_LINK_LIBRARIES (noggit
   ${OPENGL_LIBRARIES}
   CascLib
-  ColorWidgets-qt5
+  ColorWidgets-qt6
   FastNoise::FastNoise
   FramelessHelper
   glm
   nlohmann_json::nlohmann_json
   qt_imgui_widgets
-  Qt5::OpenGL
-  Qt5::OpenGLExtensions
-  Qt5::Widgets
-  Qt5::Xml
+  Qt6::OpenGL
+  Qt6::OpenGLWidgets
+  Qt6::Gui
+  Qt6::Widgets
+  Qt6::Xml
   sol2::sane
   StormLib
 )

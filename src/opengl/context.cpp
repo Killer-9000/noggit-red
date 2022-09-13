@@ -3,8 +3,9 @@
 
 #include <opengl/context.hpp>
 #include <QtGui/QOpenGLFunctions>
+#include <QOpenGLVersionFunctionsFactory>
+#include <qopengltexture.h>
 #include <memory>
-
 
 OpenGL::context gl;
 
@@ -17,7 +18,7 @@ namespace OpenGL
     , _old_core_func (context_._core_func)
   {
     _context._current_context = current_context;
-    _context._core_func = current_context->versionFunctions<QOpenGLFunctions_4_5_Core>();
+    _context._core_func = QOpenGLVersionFunctionsFactory::get<QOpenGLFunctions_4_5_Core>(current_context);
 
     if (!_context._core_func)
     {

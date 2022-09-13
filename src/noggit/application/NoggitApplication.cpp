@@ -81,11 +81,11 @@ namespace Noggit::Application
 	  Log << "Database Definitions found! : " << databaseDefinitionPath << std::endl;
 
 	  //Initalise OpenGL Context
-	  if (!QGLFormat::hasOpenGL())
-	  {
-		  throw std::runtime_error(
-			  "Your system does not support OpenGL. Sorry, this application can't run without it.");
-	  }
+	  //if (!QGLFormat::hasOpenGL())
+	  //{
+		 // throw std::runtime_error(
+			//  "Your system does not support OpenGL. Sorry, this application can't run without it.");
+	  //}
 
 	  QSurfaceFormat format;
 	  format.setRenderableType(QSurfaceFormat::OpenGL);

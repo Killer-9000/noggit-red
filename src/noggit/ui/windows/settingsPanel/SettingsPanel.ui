@@ -939,14 +939,14 @@
                    <item>
                     <widget class="QLabel" name="label_10">
                      <property name="text">
-                      <string>30</string>
+                      <string>0</string>
                      </property>
                     </widget>
                    </item>
                    <item>
                     <widget class="QSlider" name="_fps_limit_slider">
                      <property name="minimum">
-                      <number>30</number>
+                      <number>0</number>
                      </property>
                      <property name="maximum">
                       <number>180</number>

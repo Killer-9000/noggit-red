@@ -12,8 +12,8 @@
 
 #include <QtGui/QPixmap>
 #include <QtGui/QOpenGLContext>
-#include <QtGui/QOpenGLFramebufferObject>
 #include <QtGui/QOffscreenSurface>
+#include <QOpenGLFramebufferObject>
 
 #include <array>
 #include <map>
