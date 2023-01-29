@@ -9,6 +9,8 @@
 #include <QSettings>
 #include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QSlider>
+#include <QtWidgets/qcombobox.h>
+#include <QtWidgets/qgroupbox.h>
 
 class MapView;
 class QButtonGroup;
@@ -78,19 +80,29 @@ namespace Noggit
       float brushRadius() const { return _radius; }
 
       void replace_selection(std::vector<selection_type> new_selection);
+      float drag_selection_depth() const { return _drag_selection_depth; }
 
       model_import *modelImport;
       rotation_editor* rotationEditor;
       helper_models* helper_models_widget;
       QSize sizeHint() const override;
 
+      void update_selection(World* world);
+
     private:
       float _radius = 0.01f;
+      float _drag_selection_depth = 100.0f;
 
       MapView* _map_view;
 
       QSlider* _radius_slider;
       QDoubleSpinBox* _radius_spin;
+      QSlider* _drag_selection_depth_slider;
+      QDoubleSpinBox* _drag_selection_depth_spin;
+
+      QGroupBox* _wmo_group;
+      QComboBox* _doodadSetSelector;
+      QComboBox* _nameSetSelector;
 
       QSettings* _settings;
 

@@ -1,13 +1,14 @@
 #include "ImGuiRenderer.h"
+
 #include <QDateTime>
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QClipboard>
 #include <QCursor>
 #include <QDebug>
-#include <QWidget>
-#include <QPushButton>
 #include <QPalette>
+#include <QtWidgets/QPushButton>
+
 #include <unordered_map>
 #include <stdexcept>
 
@@ -444,30 +445,26 @@ ImGuiRenderer* ImGuiRenderer::instance() {
 
 void ImGuiRenderer::applyQtStyle()
 {
-    auto temp = new QWidget();
     auto temp_btn = new QPushButton();
-    temp->ensurePolished();
     temp_btn->ensurePolished();
-
-    auto& palette = temp->palette();
     auto& palette_btn = temp_btn->palette();
 
     auto& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
-    auto& qBgColor                 = palette.color(QPalette::Window);
+    auto& qBgColor                 = palette_btn.color(QPalette::Window);
     const ImVec4 bgColor           = {static_cast<float>(qBgColor.redF()),
                                       static_cast<float>(qBgColor.greenF()),
                                       static_cast<float>(qBgColor.blueF()),
                                       static_cast<float>(qBgColor.alphaF())};
 
-    auto& qLightBgColor            = palette.color(QPalette::AlternateBase);
+    auto& qLightBgColor            = palette_btn.color(QPalette::AlternateBase);
     const ImVec4 lightBgColor      = {static_cast<float>(qLightBgColor.redF()),
                                       static_cast<float>(qLightBgColor.greenF()),
                                       static_cast<float>(qLightBgColor.blueF()),
                                       static_cast<float>(qLightBgColor.alphaF())};
 
-    auto& qVeryLightBgColor        = palette.color(QPalette::Light);
+    auto& qVeryLightBgColor        = palette_btn.color(QPalette::Light);
     const ImVec4 veryLightBgColor  = {static_cast<float>(qVeryLightBgColor.redF()),
                                       static_cast<float>(qVeryLightBgColor.greenF()),
                                       static_cast<float>(qVeryLightBgColor.blueF()),
@@ -481,26 +478,26 @@ void ImGuiRenderer::applyQtStyle()
                                        static_cast<float>(qPanelColor.alphaF())};
 
 
-    auto& qPanelHoverColor          = palette.color(QPalette::Highlight);
+    auto& qPanelHoverColor          = palette_btn.color(QPalette::Highlight);
     const ImVec4 panelHoverColor    = {static_cast<float>(qPanelHoverColor.redF()),
                                        static_cast<float>(qPanelHoverColor.greenF()),
                                        static_cast<float>(qPanelHoverColor.blueF()),
                                        static_cast<float>(qPanelHoverColor.alphaF())};
 
-    auto& qPanelActiveColor         = palette.color(QPalette::Highlight);
+    auto& qPanelActiveColor         = palette_btn.color(QPalette::Highlight);
     const ImVec4 panelActiveColor   = {static_cast<float>(qPanelActiveColor.redF()),
                                        static_cast<float>(qPanelActiveColor.greenF()),
                                        static_cast<float>(qPanelActiveColor.blueF()),
                                        static_cast<float>(qPanelActiveColor.alphaF())};
 
-    auto& qTextColor                = palette.color(QPalette::WindowText);
+    auto& qTextColor                = palette_btn.color(QPalette::WindowText);
     const ImVec4 textColor          = {static_cast<float>(qTextColor.redF()),
                                        static_cast<float>(qTextColor.greenF()),
                                        static_cast<float>(qTextColor.blueF()),
                                        static_cast<float>(qTextColor.alphaF())};
 
 
-    auto& qTextDisabledColor        = palette.color(QPalette::Inactive, QPalette::WindowText);
+    auto& qTextDisabledColor        = palette_btn.color(QPalette::Inactive, QPalette::WindowText);
     const ImVec4 textDisabledColor  = {static_cast<float>(qTextDisabledColor.redF()),
                                        static_cast<float>(qTextDisabledColor.greenF()),
                                        static_cast<float>(qTextDisabledColor.blueF()),
@@ -513,7 +510,6 @@ void ImGuiRenderer::applyQtStyle()
                                        static_cast<float>(qBorderColor.blueF()),
                                        static_cast<float>(qBorderColor.alphaF())};
 
-    delete temp;
     delete temp_btn;
 
     colors[ImGuiCol_Text]                 = textColor;

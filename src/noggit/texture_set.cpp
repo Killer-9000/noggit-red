@@ -87,7 +87,7 @@ int TextureSet::addTexture (scoped_blp_texture_reference texture)
   return texLevel;
 }
 
-void TextureSet::replace_texture(scoped_blp_texture_reference const& texture_to_replace, scoped_blp_texture_reference replacement_texture)
+bool TextureSet::replace_texture (scoped_blp_texture_reference const& texture_to_replace, scoped_blp_texture_reference replacement_texture)
 {
   int replacing_level = -1, replacement_level = -1;
 
@@ -102,7 +102,7 @@ void TextureSet::replace_texture(scoped_blp_texture_reference const& texture_to_
 
   // Make sure we has textures, and they are not the same texture.
   if (replacing_level == -1 || replacement_level == replacing_level)
-    return;
+    return false;
 
   // Replace texture with replacement.
   textures[replacing_level] = std::move(replacement_texture);
@@ -110,6 +110,8 @@ void TextureSet::replace_texture(scoped_blp_texture_reference const& texture_to_
   // Merge alphamaps if duplicates.
   if (replacement_level != -1)
     merge_layers(replacing_level, replacement_level);
+
+  return true;
 }
 
 void TextureSet::swap_layers(int layer_1, int layer_2)

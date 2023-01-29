@@ -1059,7 +1059,8 @@ void MapTile::initEmptyChunks()
 
 QImage MapTile::getHeightmapImage(float min_height, float max_height)
 {
-  QImage image(257, 257, QImage::Format_RGBA64);
+  // QImage image(257, 257, QImage::Format_RGBA64);
+    QImage image(257, 257, QImage::Format_Grayscale16);
 
   unsigned const LONG{9}, SHORT{8}, SUM{LONG + SHORT}, DSUM{SUM * 2};
 
@@ -1131,7 +1132,8 @@ QImage MapTile::getNormalmapImage()
 
 QImage MapTile::getAlphamapImage(unsigned layer)
 {
-  QImage image(1024, 1024, QImage::Format_RGBA8888);
+  // QImage image(1024, 1024, QImage::Format_RGBA8888);
+  QImage image(1024, 1024, QImage::Format_Grayscale8);
   image.fill(Qt::black);
 
   for (int i = 0; i < 16; ++i)
@@ -1164,7 +1166,8 @@ QImage MapTile::getAlphamapImage(unsigned layer)
 
 QImage MapTile::getAlphamapImage(std::string const& filename)
 {
-  QImage image(1024, 1024, QImage::Format_RGBA8888);
+  // QImage image(1024, 1024, QImage::Format_RGBA8888);
+  QImage image(1024, 1024, QImage::Format_Grayscale8);
   image.fill(Qt::black);
 
   for (int i = 0; i < 16; ++i)
@@ -1174,20 +1177,25 @@ QImage MapTile::getAlphamapImage(std::string const& filename)
       MapChunk *chunk = getChunk(i, j);
 
       unsigned layer = 0;
+      bool chunk_has_texture = false;
 
       for (int k = 0; k < chunk->texture_set->num(); ++k)
       {
-        if (chunk->texture_set->filename(k) == filename)
-          layer = k;
+          if (chunk->texture_set->filename(k) == filename)
+          {
+            layer = k;
+            chunk_has_texture = true;
+          }
       }
 
-      if (!layer)
+      if (!chunk_has_texture)
       {
         for (int k = 0; k < 64; ++k)
         {
           for (int l = 0; l < 64; ++l)
           {
-            image.setPixelColor((i * 64) + k, (j * 64) + l, QColor(255, 255, 255, 255));
+            // if texture is not in the chunk, set chunk to black
+            image.setPixelColor((i * 64) + k, (j * 64) + l, QColor(0, 0, 0, 255));
           }
         }
       }
@@ -1196,14 +1204,31 @@ QImage MapTile::getAlphamapImage(std::string const& filename)
         chunk->texture_set->apply_alpha_changes();
         auto alphamaps = chunk->texture_set->getAlphamaps();
 
-        auto alpha_layer = alphamaps->at(layer - 1).value();
-
         for (int k = 0; k < 64; ++k)
         {
           for (int l = 0; l < 64; ++l)
           {
-            int value = alpha_layer.getAlpha(64 * l + k);
-            image.setPixelColor((i * 64) + k, (j * 64) + l, QColor(value, value, value, 255));
+            if (layer == 0) // titi test
+            {
+              // WoW calculates layer 0 as 255 - sum(Layer[1]...Layer[3])
+              int layers_sum = 0;
+              if (alphamaps->at(0).has_value())
+                  layers_sum += alphamaps->at(0).value().getAlpha(64 * l + k);
+              if (alphamaps->at(1).has_value())
+                  layers_sum += alphamaps->at(1).value().getAlpha(64 * l + k);
+              if (alphamaps->at(2).has_value())
+                  layers_sum += alphamaps->at(2).value().getAlpha(64 * l + k);
+              
+              int value = std::clamp((255 - layers_sum), 0, 255);
+              image.setPixelColor((i * 64) + k, (j * 64) + l, QColor(value, value, value, 255));
+            }
+            else // layer 1-3
+            {
+              auto alpha_layer = alphamaps->at(layer - 1).value();
+
+              int value = alpha_layer.getAlpha(64 * l + k);
+              image.setPixelColor((i * 64) + k, (j * 64) + l, QColor(value, value, value, 255));
+            }
           }
         }
       }
@@ -1213,8 +1238,12 @@ QImage MapTile::getAlphamapImage(std::string const& filename)
   return std::move(image);
 }
 
-void MapTile::setHeightmapImage(QImage const& image, float multiplier, int mode)
+void MapTile::setHeightmapImage(QImage const& baseimage, float multiplier, int mode) // image
 {
+  // convert to RGBA64 to properly load all type of images (grayscales don't load properly otherwise)
+  // auto image = baseimage.convertToFormat(QImage::Format_RGBA64);
+  auto image = baseimage.convertToFormat(QImage::Format_Grayscale16);
+
   unsigned const LONG{9}, SHORT{8}, SUM{LONG + SHORT}, DSUM{SUM * 2};
 
   for (int k = 0; k < 16; ++k)
@@ -1299,8 +1328,11 @@ void MapTile::setHeightmapImage(QImage const& image, float multiplier, int mode)
   }
 }
 
-void MapTile::setAlphaImage(QImage const& image, unsigned layer)
+void MapTile::setAlphaImage(QImage const& baseimage, unsigned layer)
 {
+  // auto image = baseimage.convertToFormat(QImage::Format_RGBA8888);
+  auto image = baseimage.convertToFormat(QImage::Format_Grayscale8);
+
   for (int k = 0; k < 16; ++k)
   {
     for (int l = 0; l < 16; ++l)
@@ -1309,6 +1341,8 @@ void MapTile::setAlphaImage(QImage const& image, unsigned layer)
 
       if (layer >= chunk->texture_set->num())
         continue;
+
+      chunk->registerChunkUpdate(ChunkUpdateFlags::ALPHAMAP);
 
       chunk->texture_set->create_temporary_alphamaps_if_needed();
       auto& temp_alphamaps = chunk->texture_set->getTempAlphamaps()->value();
@@ -1366,8 +1400,10 @@ QImage MapTile::getVertexColorsImage()
   return std::move(image);
 }
 
-void MapTile::setVertexColorImage(QImage const& image, int mode)
+void MapTile::setVertexColorImage(QImage const& baseimage, int mode)
 {
+  QImage image = baseimage.convertToFormat(QImage::Format_RGBA8888);
+
   unsigned const LONG{9}, SHORT{8}, SUM{LONG + SHORT}, DSUM{SUM * 2};
 
   for (int k = 0; k < 16; ++k)
@@ -1375,6 +1411,8 @@ void MapTile::setVertexColorImage(QImage const& image, int mode)
     for (int l = 0; l < 16; ++l)
     {
       MapChunk* chunk = getChunk(k, l);
+
+      chunk->registerChunkUpdate(ChunkUpdateFlags::MCCV);
 
       glm::vec3* colors = chunk->getVertexColors();
 

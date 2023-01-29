@@ -109,7 +109,7 @@ FIND_PACKAGE(Json REQUIRED)
 FIND_PACKAGE(FastNoise REQUIRED)
 
 FIND_PACKAGE(Sol2 REQUIRED)
-FIND_PACKAGE(Qt6 COMPONENTS Widgets OpenGL OpenGLWidgets Gui Xml REQUIRED)
+FIND_PACKAGE(Qt6 COMPONENTS Gui Multimedia OpenGL OpenGLWidgets Widgets Xml REQUIRED)
 
 IF(USE_SQL)
   FIND_LIBRARY(MYSQL_LIBRARY NAMES libmysql
@@ -310,9 +310,10 @@ TARGET_LINK_LIBRARIES (noggit
   glm
   nlohmann_json::nlohmann_json
   qt_imgui_widgets
+  Qt6::Gui
+  Qt6::Multimedia
   Qt6::OpenGL
   Qt6::OpenGLWidgets
-  Qt6::Gui
   Qt6::Widgets
   Qt6::Xml
   sol2::sane
@@ -384,7 +385,7 @@ IF(FALSE) # GIT_FOUND
 ELSE()
   # MESSAGE(WARNING "Failed to find a Git executable, will NOT produce a useful version string. Crash logs will be useless. Do NOT distribute.")
 
-  SET(NOGGIT_GIT_VERSION_STRING "UNKNOWN")
+  SET(NOGGIT_GIT_VERSION_STRING "1.00")
   CONFIGURE_FILE("${_noggit_revision_template_file}" "${_noggit_revision_output_file}" @ONLY)
 ENDIF()
 

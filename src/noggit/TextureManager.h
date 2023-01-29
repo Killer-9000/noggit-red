@@ -117,7 +117,7 @@ private:
 
 struct scoped_blp_texture_reference
 {
-  scoped_blp_texture_reference() = delete;
+  scoped_blp_texture_reference() {};
   scoped_blp_texture_reference (std::string const& filename, Noggit::NoggitRenderContext context);
   scoped_blp_texture_reference (scoped_blp_texture_reference const& other);
   scoped_blp_texture_reference (scoped_blp_texture_reference&&) = default;

@@ -192,15 +192,8 @@ void blp_texture::uploadToArray(GLuint array, unsigned layer)
 
 void blp_texture::upload()
 {
-  if (!finished)
-  {
+  if (!finished || _uploaded)
     return;
-  }
-
-  if (_uploaded)
-  {
-    return;
-  }
 
   int width = _width, height = _height;
 

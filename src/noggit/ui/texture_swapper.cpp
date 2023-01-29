@@ -36,12 +36,15 @@ namespace Noggit
 
       QPushButton* select = new QPushButton("Select", this);
       QPushButton* swap_adt = new QPushButton("Swap ADT", this);
-      swap_adt->setDisabled(true);
+      QPushButton* swap_global = new QPushButton("Swap Global(All ADTs)", this);
+      QPushButton* remove_text_adt = new QPushButton(tr("Remove this texture from ADT"), this);
 
       layout->addRow(new QLabel("Texture to swap"));
       layout->addRow(_texture_to_swap_display);
       layout->addRow(select);
       layout->addRow(swap_adt);
+      layout->addRow(swap_global);
+      layout->addRow(remove_text_adt);
 
       _brush_mode_group = new QGroupBox("Brush mode", this);
       _brush_mode_group->setCheckable(true);
@@ -85,6 +88,24 @@ namespace Noggit
           ActionManager::instance()->endAction();
         }
       });
+
+      connect(swap_global, &QPushButton::clicked, [this, camera_pos, map_view]() {
+          if (_texture_to_swap)
+          {
+              // ActionManager::instance()->beginAction(map_view, ActionFlags::eCHUNKS_TEXTURE);
+              _world->swapTextureGlobal(_texture_to_swap.value());
+              // ActionManager::instance()->endAction();
+          }
+          });
+
+      connect(remove_text_adt, &QPushButton::clicked, [this, camera_pos, map_view]() {
+          if (_texture_to_swap)
+          {
+              ActionManager::instance()->beginAction(map_view, ActionFlags::eCHUNKS_TEXTURE);
+              _world->removeTexture(*camera_pos, _texture_to_swap.value());
+              ActionManager::instance()->endAction();
+          }
+          });
 
       connect ( _radius_spin, qOverload<double> (&QDoubleSpinBox::valueChanged)
               , [&](double v)

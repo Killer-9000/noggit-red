@@ -13,6 +13,9 @@
 #include <noggit/ui/Checkbox.hpp>
 #include <noggit/ui/tools/UiCommon/expanderwidget.h>
 #include <util/qt/overload.hpp>
+#include <noggit/DBC.h>
+#include "noggit/ActionManager.hpp"
+#include "noggit/Action.hpp"
 
 #include <QFormLayout>
 #include <QGridLayout>
@@ -73,9 +76,40 @@ namespace Noggit
       _radius_slider->setRange (0, 100);
       _radius_slider->setSliderPosition (_radius);
 
-      radius_layout->addRow (_radius_slider);
+      radius_layout->addRow(_radius_slider);
       radius_layout->addRow(_radius_spin);
       layout->addWidget(radius_group);
+
+      QGroupBox* drag_selection_depth_group = new QGroupBox("Drag Selection Depth");
+      auto drag_selection_depth_layout = new QFormLayout(drag_selection_depth_group);
+
+      _drag_selection_depth_spin = new QDoubleSpinBox(this);
+      _drag_selection_depth_spin->setRange(1.0f, 3000.0f);
+      _drag_selection_depth_spin->setDecimals(2);
+      _drag_selection_depth_spin->setValue(_drag_selection_depth);
+
+      _drag_selection_depth_slider = new QSlider(Qt::Orientation::Horizontal, this);
+      _drag_selection_depth_slider->setRange(1.0f, 3000.0f);
+      _drag_selection_depth_slider->setSliderPosition(_drag_selection_depth);
+
+      drag_selection_depth_layout->addRow(_drag_selection_depth_slider);
+      drag_selection_depth_layout->addRow(_drag_selection_depth_spin);
+      layout->addWidget(drag_selection_depth_group);
+
+      QPushButton* asset_browser_btn = new QPushButton("Asset browser", this);
+      layout->addWidget(asset_browser_btn);
+      QPushButton* object_palette_btn = new QPushButton("Object palette", this);
+      layout->addWidget(object_palette_btn);
+
+      _wmo_group = new QGroupBox("WMO Options");
+      auto wmo_layout = new QFormLayout(_wmo_group);
+
+      _doodadSetSelector = new QComboBox(this);
+      _nameSetSelector = new QComboBox(this);
+      layout->addWidget(_wmo_group);
+
+      wmo_layout->addRow("Doodad Set:", _doodadSetSelector);
+      wmo_layout->addRow("Name Set:", _nameSetSelector);
 
       auto *copyBox = new ExpanderWidget( this);
       copyBox->setExpanderTitle("Copy options");
@@ -224,7 +258,7 @@ namespace Noggit
       multi_select_movement_layout->addRow(multi_select_movement_cb);
       multi_select_movement_layout->addRow(object_median_pivot_point);
 
-      auto *selectionOptionsBox = new ExpanderWidget( this);
+      auto *selectionOptionsBox = new ExpanderWidget(this);
       selectionOptionsBox->setExpanderTitle("Movement Options");
       selectionOptionsBox->setExpanded(_settings->value ("object_editor/movement_options", false).toBool());
 
@@ -253,16 +287,12 @@ namespace Noggit
       QPushButton *last_m2_from_wmv = new QPushButton("Last M2 from WMV", this);
       QPushButton *last_wmo_from_wmv = new QPushButton("Last WMO from WMV", this);
       QPushButton *helper_models_btn = new QPushButton("Helper Models", this);
-      QPushButton *asset_browser_btn = new QPushButton("Asset browser", this);
-      QPushButton *object_palette_btn = new QPushButton("Object palette", this);
 
       importBox_content_layout->addWidget(toTxt);
       importBox_content_layout->addWidget(fromTxt);
       importBox_content_layout->addWidget(last_m2_from_wmv);
       importBox_content_layout->addWidget(last_wmo_from_wmv);
       importBox_content_layout->addWidget(helper_models_btn);
-      importBox_content_layout->addWidget(asset_browser_btn);
-      importBox_content_layout->addWidget(object_palette_btn);
 
       importBox->addPage(importBox_content);
 
@@ -345,6 +375,23 @@ namespace Noggit
                   QSignalBlocker const blocker(_radius_spin);
                   _radius_spin->setValue(v);
                 }
+      );
+
+      connect(_drag_selection_depth_spin, qOverload<double>(&QDoubleSpinBox::valueChanged)
+          , [&] (double v)
+              {
+                _drag_selection_depth = v;
+                QSignalBlocker const blocker(_drag_selection_depth_slider);
+                _drag_selection_depth_slider->setSliderPosition((int)std::round(v));
+              }
+      );
+      connect(_drag_selection_depth_slider, &QSlider::valueChanged
+          , [&](int v)
+              {
+                _drag_selection_depth = v;
+                QSignalBlocker const blocker(_drag_selection_depth_spin);
+                _drag_selection_depth_spin->setValue(v);
+              }
       );
 
       connect ( rotRangeStart, qOverload<double> (&QDoubleSpinBox::valueChanged)
@@ -455,6 +502,50 @@ namespace Noggit
           , &QPushButton::clicked
           , [=]() { mapView->getObjectPalette()->setVisible(mapView->getObjectPalette()->isHidden()); }
       );
+
+      connect(_doodadSetSelector
+          , qOverload<int>(&QComboBox::currentIndexChanged)
+          , [this](int index) {
+              auto last_entry = _map_view->_world->get_last_selected_model();
+            if (last_entry)
+            {
+                if (last_entry.value().index() != eEntry_Object)
+                {
+                    return;
+                }
+                auto obj = std::get<selected_object_type>(last_entry.value());
+                if (obj->which() == eWMO)
+                {
+                    // use actions or directly call updateDetailInfos() ?
+                    WMOInstance* wi = static_cast<WMOInstance*>(obj);
+                    NOGGIT_ACTION_MGR->beginAction(_map_view, Noggit::ActionFlags::eOBJECTS_TRANSFORMED);
+                    wi->change_doodadset(index);
+                    NOGGIT_ACTION_MGR->endAction();
+                }
+            }
+          });
+
+      connect(_nameSetSelector
+          , qOverload<int>(&QComboBox::currentIndexChanged)
+          , [this](int index) {
+              auto last_entry = _map_view->_world->get_last_selected_model();
+            if (last_entry)
+            {
+                if (last_entry.value().index() != eEntry_Object)
+                {
+                    return;
+                }
+                auto obj = std::get<selected_object_type>(last_entry.value());
+                if (obj->which() == eWMO)
+                {
+                    WMOInstance* wi = static_cast<WMOInstance*>(obj);
+                    NOGGIT_ACTION_MGR->beginAction(_map_view, Noggit::ActionFlags::eOBJECTS_TRANSFORMED);
+                    wi->mNameset = index;
+                    NOGGIT_ACTION_MGR->endAction();
+
+                }
+            }
+          });
 
       auto mv_pos = mapView->pos();
       auto mv_size = mapView->size();
@@ -782,6 +873,65 @@ namespace Noggit
     QSize object_editor::sizeHint() const
     {
       return QSize(215, height());
+    }
+
+    void object_editor::update_selection(World* world)
+    {
+        _wmo_group->setDisabled(true);
+        _wmo_group->hide();
+
+        auto last_entry = world->get_last_selected_model();
+        // for (auto& selection : selected)
+        if (last_entry)
+        {
+            if (last_entry.value().index() != eEntry_Object)
+            {
+                return;
+            }
+            auto obj = std::get<selected_object_type>(last_entry.value());
+
+            if (obj->which() == eMODEL)
+            {
+                // ModelInstance* mi = static_cast<ModelInstance*>(obj);
+            }
+            else if (obj->which() == eWMO)
+            {
+                _wmo_group->setDisabled(false);
+                _wmo_group->setHidden(false);
+                WMOInstance* wi = static_cast<WMOInstance*>(obj);
+
+                QSignalBlocker const doodadsetblocker(_doodadSetSelector);
+                _doodadSetSelector->clear();
+
+                QStringList doodadsetnames;
+                for (auto& doodad_set : wi->wmo->doodadsets)
+                {
+                    doodadsetnames.append(doodad_set.name);
+                }
+                _doodadSetSelector->insertItems(0, doodadsetnames);
+                _doodadSetSelector->setCurrentIndex(wi->doodadset());
+
+                // get names from WMOAreatable, if no name, get from areatable
+                // if no areatable, we have to get the terrain's area
+                QSignalBlocker const namesetblocker(_nameSetSelector);
+                _nameSetSelector->clear();
+                auto wmoid = wi->wmo->WmoId;
+                auto setnames = gWMOAreaTableDB.getWMOAreaNames(wmoid);
+                QStringList namesetnames;
+                for (auto& area_name : setnames)
+                {
+                    if (area_name.empty())
+                    {
+                        auto chunk = world->getChunkAt(wi->pos);
+                        namesetnames.append(gAreaDB.getAreaName(chunk->getAreaID()).c_str());
+                    }
+                    else
+                        namesetnames.append(area_name.c_str());
+                }
+                _nameSetSelector->insertItems(0, namesetnames);
+                _nameSetSelector->setCurrentIndex(wi->mNameset);
+            }
+        }
     }
   }
 }

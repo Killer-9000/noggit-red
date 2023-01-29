@@ -80,8 +80,8 @@ namespace Noggit
       void keyPressEvent(QKeyEvent* event) override;
       void focusOutEvent(QFocusEvent* event) override;
 
+    private:
       bool _hasError = false;
-
     };
   }
 }

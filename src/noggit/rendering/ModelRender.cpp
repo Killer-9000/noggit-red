@@ -6,7 +6,6 @@
 #include <math/bounding_box.hpp>
 #include <noggit/Misc.h>
 
-
 using namespace Noggit::Rendering;
 
 ModelRender::ModelRender(Model* model)
@@ -31,28 +30,14 @@ void ModelRender::upload()
   if (_model->animBones)
   {
     gl.createTexturesEXT(GL_TEXTURE_BUFFER, 1, &_bone_matrices_buf_tex);
-
-    //gl.bindTexture(GL_TEXTURE_BUFFER, _bone_matrices_buf_tex);
-    //OpenGL::Scoped::buffer_binder<GL_TEXTURE_BUFFER> const binder(_bone_matrices_buffer);
     gl.namedBufferDataEXT(_bone_matrices_buffer, _model->bone_matrices.size() * sizeof(glm::mat4x4), nullptr, GL_STREAM_DRAW);
     gl.namedTextureBufferEXT(_bone_matrices_buf_tex, GL_RGBA32F, _bone_matrices_buffer);
   }
 
-  {
-    //OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const binder(_vertices_buffer);
-    gl.namedBufferDataEXT(_vertices_buffer, _model->_vertices.size() * sizeof(ModelVertex), _model->_vertices.data(), GL_STATIC_DRAW);
-  }
-
-  {
-    //OpenGL::Scoped::buffer_binder<GL_ARRAY_BUFFER> const binder (_box_vbo);
-    gl.namedBufferDataEXT(_box_vbo, _vertex_box_points.size() * sizeof (glm::vec3), _vertex_box_points.data(), GL_STATIC_DRAW);
-  }
-
-  //OpenGL::Scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> indices_binder(_indices_buffer);
-  gl.namedBufferDataEXT(_indices_buffer, _model->_indices.size() * sizeof(uint16_t), _model->_indices.data(), GL_STATIC_DRAW);
-
-  //OpenGL::Scoped::buffer_binder<GL_ELEMENT_ARRAY_BUFFER> box_indices_binder(_box_indices_buffer);
-  gl.namedBufferDataEXT(_box_indices_buffer, _box_indices.size() * sizeof(uint16_t), _box_indices.data(), GL_STATIC_DRAW);
+	gl.namedBufferDataEXT(_vertices_buffer, _model->_vertices.size() * sizeof(ModelVertex), _model->_vertices.data(), GL_STATIC_DRAW);
+	gl.namedBufferDataEXT(_box_vbo, _vertex_box_points.size() * sizeof (glm::vec3), _vertex_box_points.data(), GL_STATIC_DRAW);
+	gl.namedBufferDataEXT(_indices_buffer, _model->_indices.size() * sizeof(uint16_t), _model->_indices.data(), GL_STATIC_DRAW);
+	gl.namedBufferDataEXT(_box_indices_buffer, _box_indices.size() * sizeof(uint16_t), _box_indices.data(), GL_STATIC_DRAW);
 
   _model->_textureFilenames.clear();
 
@@ -790,6 +775,25 @@ bool ModelRenderPass::prepareDraw(OpenGL::Scoped::use_program& m2_shader, Model 
     return false;
   }
 
+  if (model_render_state.backface_cull != !renderflag.flags.two_sided)
+  {
+    if (renderflag.flags.two_sided)
+      gl.disable(GL_CULL_FACE);
+    else
+      gl.enable(GL_CULL_FACE);
+
+    model_render_state.backface_cull = !renderflag.flags.two_sided;
+  }
+
+  if (model_render_state.z_buffered != renderflag.flags.z_buffered)
+  {
+    if (renderflag.flags.z_buffered)
+      gl.depthMask(GL_FALSE);
+    else
+      gl.depthMask(GL_TRUE);
+
+    model_render_state.z_buffered = renderflag.flags.z_buffered;
+  }
 
   if (model_render_state.blend != renderflag.blend)
   {
@@ -826,30 +830,6 @@ bool ModelRenderPass::prepareDraw(OpenGL::Scoped::use_program& m2_shader, Model 
     model_render_state.blend = renderflag.blend;
   }
 
-  if (model_render_state.backface_cull != !renderflag.flags.two_sided)
-  {
-    if (renderflag.flags.two_sided)
-    {
-      gl.disable(GL_CULL_FACE);
-    }
-    else
-    {
-      gl.enable(GL_CULL_FACE);
-    }
-
-    model_render_state.backface_cull = !renderflag.flags.two_sided;
-  }
-
-  if (model_render_state.z_buffered != renderflag.flags.z_buffered)
-  {
-    if (renderflag.flags.z_buffered)
-      gl.depthMask(GL_FALSE);
-    else
-      gl.depthMask(GL_TRUE);
-
-    model_render_state.z_buffered = renderflag.flags.z_buffered;
-  }
-
   if (model_render_state.unfogged != renderflag.flags.unfogged)
   {
     m2_shader.uniform("unfogged", (int)renderflag.flags.unfogged);
@@ -861,13 +841,6 @@ bool ModelRenderPass::prepareDraw(OpenGL::Scoped::use_program& m2_shader, Model 
     m2_shader.uniform("unlit", (int)renderflag.flags.unlit);
     model_render_state.unlit = renderflag.flags.unlit;
   }
-
-  if (texture_count > 1)
-  {
-    bindTexture(1, m, model_render_state, m2_shader);
-  }
-
-  bindTexture(0, m, model_render_state, m2_shader);
 
   GLint tu1 = static_cast<GLint>(tu_lookups[0]), tu2 = static_cast<GLint>(tu_lookups[1]);
 
@@ -893,13 +866,9 @@ bool ModelRenderPass::prepareDraw(OpenGL::Scoped::use_program& m2_shader, Model 
     {
       tex_anim_lookup = m->_texture_animation_lookups[uv_animations[1]];
       if (tex_anim_lookup != -1)
-      {
         m2_shader.uniform("tex_matrix_2", m->_texture_animations[tex_anim_lookup].mat);
-      }
       else
-      {
         m2_shader.uniform("tex_matrix_2", unit);
-      }
     }
   }
   else
@@ -918,6 +887,10 @@ bool ModelRenderPass::prepareDraw(OpenGL::Scoped::use_program& m2_shader, Model 
 
   m2_shader.uniform("mesh_color", mesh_color);
 
+  if (texture_count > 1)
+    bindTexture(1, m, model_render_state, m2_shader);
+  bindTexture(0, m, model_render_state, m2_shader);
+
   return true;
 }
 
@@ -928,68 +901,14 @@ void ModelRenderPass::afterDraw()
 
 void ModelRenderPass::bindTexture(size_t index, Model* m, OpenGL::M2RenderState& model_render_state, OpenGL::Scoped::use_program& m2_shader)
 {
-
+	// TODO: Double check this, to make sure nothing can be out-of-bounds.
   uint16_t tex = m->_texture_lookup[textures[index]];
+	const scoped_blp_texture_reference& texture = (m->_specialTextures[tex] == -1 ? m->_textures[tex] : m->_replaceTextures[m->_specialTextures[tex]]);
+	texture->upload();
 
-  if (m->_specialTextures[tex] == -1)
-  {
-    auto& texture = m->_textures[tex];
-    texture->upload();
-    GLuint tex_array = texture->texture_array();
-    int tex_index = texture->array_index();
-
-    gl.bindTextureUnitEXT(1 + index, tex_array);
-    /*
-    if (model_render_state.tex_arrays[index] != tex_array)
-    {
-      gl.activeTexture(GL_TEXTURE0 + index + 1);
-      gl.bindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
-      model_render_state.tex_arrays[index] = tex_array;
-    }
-
-
-    if (model_render_state.tex_indices[index] != tex_index)
-    {
-      m2_shader.uniform(index ? "tex2_index" : "tex1_index", tex_index);
-      model_render_state.tex_indices[index] = tex_index;
-    }
-
-    */
-
-    m2_shader.uniform(index ? "tex2_index" : "tex1_index", tex_index);
-    model_render_state.tex_indices[index] = tex_index;
-
-  }
-  else
-  {
-    // TODO: Exception caused from out-of-bounds in asset browser.
-    auto& texture = m->_replaceTextures.at (m->_specialTextures[tex]);
-    texture->upload();
-    GLuint tex_array = texture->texture_array();
-    int tex_index = texture->array_index();
-
-    gl.bindTextureUnitEXT(1 + index, tex_array);
-
-    /*
-    if (model_render_state.tex_arrays[index] != tex_array)
-    {
-      gl.activeTexture(GL_TEXTURE0 + index + 1);
-      gl.bindTexture(GL_TEXTURE_2D_ARRAY, tex_array);
-      model_render_state.tex_arrays[index] = tex_array;
-    }
-
-    if (model_render_state.tex_indices[index] != tex_index)
-    {
-      m2_shader.uniform(index ? "tex2_index" : "tex1_index", tex_index);
-      model_render_state.tex_indices[index] = tex_index;
-    }
-
-          */
-
-    m2_shader.uniform(index ? "tex2_index" : "tex1_index", tex_index);
-    model_render_state.tex_indices[index] = tex_index;
-
-  }
+	gl.bindTextureUnitEXT(1 + index, texture->texture_array());
+	m2_shader.uniform(index ? "tex2_index" : "tex1_index", texture->array_index());
+	model_render_state.tex_indices[index] = texture->array_index();
 }
 
 void ModelRenderPass::initUVTypes(Model* m)

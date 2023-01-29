@@ -1942,6 +1942,64 @@ void World::swapTexture(glm::vec3 const& pos, scoped_blp_texture_reference tex)
   }
 }
 
+void World::swapTextureGlobal(scoped_blp_texture_reference tex)
+{
+    if (!!Noggit::Ui::selected_texture::get())
+    {
+
+        for (size_t z = 0; z < 64; z++)
+        {
+            for (size_t x = 0; x < 64; x++)
+            {
+                TileIndex tile(x, z);
+
+                bool unload = !mapIndex.tileLoaded(tile) && !mapIndex.tileAwaitingLoading(tile);
+                MapTile* mTile = mapIndex.loadTile(tile);
+
+                if (mTile)
+                {
+                    mTile->wait_until_loaded();
+
+                    bool tile_changed = false;
+                    for_all_chunks_on_tile(mTile, [&](MapChunk* chunk)
+                    {
+                        // NOGGIT_CUR_ACTION->registerChunkTextureChange(chunk);
+                        bool swapped = chunk->switchTexture(tex, *Noggit::Ui::selected_texture::get());
+                        if (swapped)
+                            tile_changed = true;
+                    });
+
+                    if (tile_changed)
+                    {
+                        mTile->saveTile(this);
+                        mapIndex.markOnDisc(tile, true);
+                        mapIndex.unsetChanged(tile);
+                    }
+
+                    if (unload)
+                    {
+                        mapIndex.unloadTile(tile);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void World::removeTexture(glm::vec3 const& pos, scoped_blp_texture_reference tex)
+{
+    if (!!Noggit::Ui::selected_texture::get())
+    {
+        for_all_chunks_on_tile(pos, [&](MapChunk* chunk)
+            {
+                NOGGIT_CUR_ACTION->registerChunkTextureChange(chunk);
+                // chunk->switchTexture(tex, *Noggit::Ui::selected_texture::get());
+                chunk->eraseTexture(tex);
+            });
+    }
+}
+
+
 void World::removeTexDuplicateOnADT(glm::vec3 const& pos)
 {
   for_all_chunks_on_tile(pos, [](MapChunk* chunk)
@@ -2838,3 +2896,84 @@ void World::notifyTileRendererOnSelectedTextureChange()
   }
 }
 
+void World::select_objects_in_area(
+    const std::array<glm::vec2, 2> selection_box, 
+    bool reset_selection,
+    glm::mat4x4 view,
+    glm::mat4x4 projection,
+    int viewport_width, 
+    int viewport_height,
+    float user_depth,
+    glm::vec3 camera_position)
+{
+    if (reset_selection)
+    {
+        this->reset_selection();
+    }
+
+    for (auto& map_object : _loaded_tiles_buffer)
+    {
+        MapTile* tile = map_object.second;
+
+        if (!tile)
+        {
+            break;
+        }
+
+        for (auto& pair : tile->getObjectInstances())
+        {
+            auto objectType = pair.second[0]->which();
+            if (objectType == eMODEL || objectType == eWMO)
+            {
+                for (auto& instance : pair.second)
+                {
+                    auto model = instance->transformMatrix();
+                    glm::mat4 VPmatrix = projection * view;
+                    glm::vec4 screenPos = VPmatrix * glm::vec4(instance->pos, 1.0f);
+                    screenPos.x /= screenPos.w;
+                    screenPos.y /= screenPos.w;
+
+                    screenPos.x = (screenPos.x + 1.0f) / 2.0f;
+                    screenPos.y = (screenPos.y + 1.0f) / 2.0f;
+                    screenPos.y = 1 - screenPos.y;
+
+                    screenPos.x *= viewport_width;
+                    screenPos.y *= viewport_height;
+                    
+                    auto depth = glm::distance(camera_position, instance->pos);
+                    if (depth <= user_depth)
+                    {
+                        const glm::vec2 screenPos2D = glm::vec2(screenPos);
+                        if (misc::pointInside(screenPos2D, selection_box))
+                        {
+                            auto uid = instance->uid;
+                            auto modelInstance = _model_instance_storage.get_instance(uid);
+                            if (modelInstance && modelInstance.value().index() == eEntry_Object) {
+                                auto obj = std::get<selected_object_type>(modelInstance.value());
+                                auto which = std::get<selected_object_type>(modelInstance.value())->which();
+                                if (which == eWMO)
+                                {
+                                    auto model_instance = static_cast<WMOInstance*>(obj);
+
+                                    if (!is_selected(obj) && !model_instance->wmo->is_hidden())
+                                    {
+                                        this->add_to_selection(obj);
+                                    }
+                                }
+                                else if (which == eMODEL)
+                                {
+                                    auto model_instance = static_cast<ModelInstance*>(obj);
+
+                                    if (!is_selected(obj) && !model_instance->model->is_hidden())
+                                    {
+                                        this->add_to_selection(obj);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -75,7 +75,7 @@ public:
       if (locale == -1)
       {
         assert(field < file.fieldCount - 8);
-        for (loc = 0; loc < 16; loc++)
+        for (loc = 0; loc < 15; loc++)
         {
           size_t stringOffset = getUInt(field + loc);
           if (stringOffset != 0)
@@ -189,6 +189,27 @@ public:
         return (*i);
     }
     throw NotFound();
+  }
+  inline bool CheckIfIdExists(unsigned int id, size_t field = 0)
+  {
+      for (Iterator i = begin(); i != end(); ++i)
+      {
+          if (i->getUInt(field) == id)
+              return (true);
+      }
+      return (false);
+  }
+  inline int getRecordRowId(unsigned int id, size_t field = 0)
+  {
+      int row_id = 0;
+      for (Iterator i = begin(); i != end(); ++i)
+      {
+          if (i->getUInt(field) == id)
+              return row_id;
+
+          row_id++;
+      }
+      throw NotFound();
   }
 
   Record addRecord(size_t id, size_t id_field = 0);

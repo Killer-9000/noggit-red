@@ -193,6 +193,9 @@ public:
   template<typename Fun>
     void for_all_chunks_on_tile (glm::vec3 const& pos, Fun&&);
 
+    template<typename Fun>
+    void for_all_chunks_on_tile(MapTile* tile, Fun&& fun);
+
   template<typename Fun>
     void for_chunk_at(glm::vec3 const& pos, Fun&& fun);
   template<typename Fun>
@@ -218,6 +221,8 @@ public:
   void clear_shadows(glm::vec3 const& pos);
   void clearTextures(glm::vec3 const& pos);
   void swapTexture(glm::vec3 const& pos, scoped_blp_texture_reference tex);
+  void swapTextureGlobal(scoped_blp_texture_reference tex);
+  void removeTexture(glm::vec3 const& pos, scoped_blp_texture_reference tex);
   void removeTexDuplicateOnADT(glm::vec3 const& pos);
   void change_texture_flag(glm::vec3 const& pos, scoped_blp_texture_reference const& tex, std::size_t flag, bool add);
 
@@ -356,6 +361,17 @@ public:
   void loadAllTiles();
   unsigned getNumLoadedTiles() const { return _n_loaded_tiles; };
   unsigned getNumRenderedTiles() const { return _n_rendered_tiles; };
+
+  void select_objects_in_area(
+      const std::array<glm::vec2, 2> selection_box, 
+      bool reset_selection,
+      glm::mat4x4 view,
+      glm::mat4x4 projection,
+      int viewport_width,
+      int viewport_height,
+      float user_depth,
+      glm::vec3 camera_position
+  );
 
 protected:
   void update_models_by_filename();

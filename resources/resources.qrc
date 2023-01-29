@@ -49,12 +49,9 @@
       <file alias="sphere_fs">../src/noggit/rendering/glsl/sphere_frag.glsl</file>
       <file alias="sphere_vs">../src/noggit/rendering/glsl/sphere_vert.glsl</file>
       <file alias="square_fs">../src/noggit/rendering/glsl/square_frag.glsl</file>
-      <file alias="square_vs">../src/noggit/rendering/glsl/square_vert.glsl</file>
-      <file alias="terrain_fs">../src/noggit/rendering/glsl/terrain_frag.glsl</file>
-      <file alias="terrain_vs">../src/noggit/rendering/glsl/terrain_vert.glsl</file>
-      <file alias="wire_box_fs">../src/noggit/rendering/glsl/wire_box_frag.glsl</file>
-      <file alias="wire_box_vs">../src/noggit/rendering/glsl/wire_box_vert.glsl</file>
-      <file alias="wmo_fs">../src/noggit/rendering/glsl/wmo_frag.glsl</file>
-      <file alias="wmo_vs">../src/noggit/rendering/glsl/wmo_vert.glsl</file>
+      <file alias="cylinder_vs">../src/noggit/rendering/glsl/cylinder_vert.glsl</file>
+      <file alias="cylinder_fs">../src/noggit/rendering/glsl/cylinder_frag.glsl</file>
+	  <file alias="line_vs">../src/noggit/rendering/glsl/line_vert.glsl</file>
+	  <file alias="line_fs">../src/noggit/rendering/glsl/line_frag.glsl</file>
     </qresource>
 </RCC>

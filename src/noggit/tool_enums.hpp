@@ -73,7 +73,7 @@ enum class editing_mode
   object,
   minimap,
   stamp,
-  //light,
+  light,
   scripting,
   //chunk,
 };

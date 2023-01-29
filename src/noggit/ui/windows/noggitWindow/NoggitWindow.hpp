@@ -32,7 +32,8 @@ namespace Noggit::Ui::Windows
     class NoggitWindow : public QMainWindow
     {
       Q_OBJECT
-    	friend class Noggit::Ui::Component::BuildMapListComponent;
+
+      friend class Noggit::Ui::Component::BuildMapListComponent;
 
     public:
       NoggitWindow(std::shared_ptr<Noggit::Application::NoggitApplicationConfiguration> application,
@@ -86,6 +87,9 @@ namespace Noggit::Ui::Windows
       QMetaObject::Connection _map_wizard_connection;
 
       QListWidget* _continents_table;
+      QString _filter_name;
+
+      void applyFilterSearch(const QString& name, int type, int expansion);
 
       std::unique_ptr<World> _world;
 

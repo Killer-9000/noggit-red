@@ -772,7 +772,6 @@ void MapChunk::updateNormalsData()
 
 bool MapChunk::changeTerrain(glm::vec3 const& pos, float change, float radius, int BrushType, float inner_radius)
 {
-  float dist, xdiff, zdiff;
   bool changed = false;
 
   for (int i = 0; i < mapbufsize; ++i)
@@ -1242,6 +1241,17 @@ void MapChunk::eraseTextures()
   texture_set->eraseTextures();
 }
 
+void MapChunk::eraseTexture(scoped_blp_texture_reference const& tex)
+{
+
+    int textureindex = texture_set->get_texture_index_or_add(tex, 0);
+
+    if (textureindex != -1)
+    {
+        texture_set->eraseTexture(textureindex);
+    }
+}
+
 void MapChunk::change_texture_flag(scoped_blp_texture_reference const& tex, std::size_t flag, bool add)
 {
   texture_set->change_texture_flag(tex, flag, add);
@@ -1252,10 +1262,13 @@ int MapChunk::addTexture(scoped_blp_texture_reference texture)
   return texture_set->addTexture(std::move (texture));
 }
 
-void MapChunk::switchTexture(scoped_blp_texture_reference const& oldTexture, scoped_blp_texture_reference newTexture)
+bool MapChunk::switchTexture(scoped_blp_texture_reference const& oldTexture, scoped_blp_texture_reference newTexture)
 {
-  texture_set->replace_texture(oldTexture, std::move (newTexture));
-  registerChunkUpdate(ChunkUpdateFlags::ALPHAMAP);
+  bool changed = texture_set->replace_texture(oldTexture, std::move (newTexture));
+  if (changed)
+    registerChunkUpdate(ChunkUpdateFlags::ALPHAMAP);
+
+  return changed;
 }
 
 bool MapChunk::paintTexture(glm::vec3 const& pos, Brush* brush, float strength, float pressure, scoped_blp_texture_reference texture)

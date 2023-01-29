@@ -3,6 +3,7 @@
 #include <noggit/ui/windows/projectSelection/components/CreateProjectComponent.hpp>
 #include <noggit/ui/windows/projectSelection/components/LoadProjectComponent.hpp>
 #include <noggit/project/CurrentProject.hpp>
+#include <noggit/ui/FontAwesome.hpp>
 
 #include <QString>
 #include <QFileDialog>
@@ -10,6 +11,7 @@
 #include <filesystem>
 
 #include "ui_NoggitProjectSelectionWindow.h"
+
 
 using namespace Noggit::Ui::Windows;
 
@@ -30,10 +32,32 @@ NoggitProjectSelectionWindow::NoggitProjectSelectionWindow(Noggit::Application::
   _ui->label_2->setStyleSheet("QLabel#title { font-size: 18px; padding: 0px; }");
 
   _settings = new Noggit::Ui::settings(this);
+  //_changelog = new Noggit::Ui::CChangelog(this);
 
   _load_project_component = std::make_unique<Component::LoadProjectComponent>();
 
+  _ui->settings_button->setIcon(Noggit::Ui::FontAwesomeIcon(Noggit::Ui::FontAwesome::Icons::cog));
+  _ui->settings_button->setIconSize(QSize(20,20));
+
+  _ui->changelog_button->hide();
+  //_ui->changelog_button->setIcon(Noggit::Ui::FontAwesomeIcon(Noggit::Ui::FontAwesome::Icons::file));
+  //_ui->changelog_button->setIconSize(QSize(20, 20));
+  //_ui->changelog_button->setText(tr(" Changelog"));
+  //_ui->changelog_button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+
   Component::RecentProjectsComponent::buildRecentProjectsList(this);
+
+  QObject::connect(_ui->settings_button, &QToolButton::clicked, [&]
+      {
+          _settings->show();
+      }
+  );
+
+  /*QObject::connect(_ui->changelog_button, &QToolButton::clicked, [&]()
+      {
+          _changelog->SelectFirst();
+          _changelog->show();
+      });*/
 
   QObject::connect(_ui->button_create_new_project, &QPushButton::clicked, [=, this]
                    {
@@ -119,6 +143,35 @@ NoggitProjectSelectionWindow::NoggitProjectSelectionWindow(Noggit::Application::
                      close();
                    }
   );
+
+  // !disable-update && !force-changelog
+  /*if (!_noggit_application->GetCommand(0) && !_noggit_application->GetCommand(1))
+  {
+      _updater = new Noggit::Ui::CUpdater(this);
+
+      QObject::connect(_updater, &CUpdater::OpenUpdater, [=]()
+          {
+              _updater->setModal(true);
+              _updater->show();
+          });
+  }*/
+
+  auto _set = new QSettings(this);
+  //auto first_changelog = _set->value("first_changelog", false);
+
+  // force-changelog
+  /*if (_noggit_application->GetCommand(1) || !first_changelog.toBool())
+  {
+      _changelog->setModal(true);
+      _changelog->show();
+
+      if (!first_changelog.toBool())
+      {
+          _set->setValue("first_changelog", true);
+          _set->sync();
+      }
+  }*/
+  
 }
 
 void NoggitProjectSelectionWindow::handleContextMenuProjectListItemDelete(std::string const& project_path)
