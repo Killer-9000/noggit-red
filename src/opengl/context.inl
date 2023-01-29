@@ -1,4 +1,4 @@
-// This file is part of Noggit3, licensed under GNU General Public License (version 3).
+﻿// This file is part of Noggit3, licensed under GNU General Public License (version 3).
 
 #ifndef NOGGIT_CONTEXT_INL
 #define NOGGIT_CONTEXT_INL
@@ -508,6 +508,13 @@ void OpenGL::context::drawRangeElements (GLenum mode, GLuint start, GLuint end, 
   verify_context_and_check_for_gl_errors const _ (_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
   _core_func->glDrawRangeElements (mode, start, end, count, type, indices);
+}
+void OpenGL::context::multiDrawElements(GLenum mode, GLenum type, const GLsizei* count, const GLvoid** indices, const GLsizei drawcount)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glMultiDrawElements(mode, count, type, indices, drawcount);
 }
 
 void OpenGL::context::genPrograms (GLsizei count, GLuint* programs)
@@ -1068,6 +1075,35 @@ void OpenGL::context::bufferSubData(GLuint buffer, GLintptr offset, std::vector<
 #endif
 }
 
+GLuint64 OpenGL::context::getTextureHandleARB(GLuint texture​)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  typedef GLuint64(*GetTextureHandleARBFunc)(GLuint);
+  auto func = (GetTextureHandleARBFunc)_current_context->getProcAddress("glGetTextureHandleARB");
+  return func(texture​);
+}
+void OpenGL::context::makeTextureHandleResidentARB(GLuint64 handle)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  typedef GLuint64(*MakeTextureHandleResidentARBFunc)(GLuint);
+  auto func = (MakeTextureHandleResidentARBFunc)_current_context->getProcAddress("glMakeTextureHandleResidentARB");
+  func(handle);
+}
+
+void OpenGL::context::makeTextureHandleNonResidentARB(GLuint64 handle)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  typedef GLuint64(*MakeTextureHandleNonResidentARBFunc)(GLuint);
+  auto func = (MakeTextureHandleNonResidentARBFunc)_current_context->getProcAddress("glMakeTextureHandleNonResidentARB");
+  func(handle);
+}
+
 void OpenGL::context::drawElementsIndirect(GLenum mode, GLenum type, const void* indirect)
 {
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
@@ -1098,6 +1134,7 @@ void OpenGL::context::namedBufferSubDataEXT(GLuint buffer, GLintptr offset, std:
 #ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
   verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
+  _core_func->glCopyBufferSubData();
   _core_func->glNamedBufferSubData(buffer, offset, data.size() * sizeof(T), data.data());
 }
 
@@ -1261,6 +1298,38 @@ void OpenGL::context::namedTextureParameterfvEXT(GLuint buffer, GLenum pname, GL
   verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
 #endif
   _core_func->glTextureParameterfv(buffer, pname, params);
+}
+
+inline void OpenGL::context::namedCopyBufferSubData(GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizei count)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glCopyNamedBufferSubData(readBuffer, writeBuffer, readOffset, writeOffset, count);
+}
+
+inline GLvoid* OpenGL::context::namedMapBuffer(GLuint buffer, GLenum usage)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  return _core_func->glMapNamedBuffer(buffer, usage);
+}
+
+inline GLvoid* OpenGL::context::namedMapBufferRange(GLuint buffer, GLintptr offset, GLsizei size, GLenum usage)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  return _core_func->glMapNamedBufferRange(buffer, offset, size, usage);
+}
+
+inline void OpenGL::context::namedUnmapBuffer(GLuint buffer)
+{
+#ifndef NOGGIT_DO_NOT_CHECK_FOR_OPENGL_ERRORS
+  verify_context_and_check_for_gl_errors const _(_current_context, NOGGIT_CURRENT_FUNCTION);
+#endif
+  _core_func->glUnmapNamedBuffer(buffer);
 }
 
 template void OpenGL::context::bufferData<GL_ARRAY_BUFFER, float>(GLuint buffer, std::vector<float> const& data, GLenum usage);

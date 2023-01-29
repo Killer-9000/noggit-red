@@ -154,6 +154,7 @@ namespace OpenGL
     NOGGIT_FORCEINLINE void drawElements (GLenum mode, GLsizei count, GLenum type, GLvoid const* indices);
     NOGGIT_FORCEINLINE void drawElementsInstanced (GLenum mode, GLsizei count, GLenum type, GLvoid const* indices, GLsizei instancecount);
     NOGGIT_FORCEINLINE void drawRangeElements (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, GLvoid const* indices);
+    NOGGIT_FORCEINLINE void multiDrawElements(GLenum mode, GLenum type, const GLsizei* count, const GLvoid** indices, const GLsizei drawcount);
 
     NOGGIT_FORCEINLINE void genPrograms (GLsizei programs, GLuint*);
     NOGGIT_FORCEINLINE void deletePrograms (GLsizei programs, GLuint*);
@@ -251,6 +252,9 @@ namespace OpenGL
     template<GLenum target, typename T>
     NOGGIT_FORCEINLINE void bufferSubData(GLuint buffer, GLintptr offset, const std::vector<T> &data);
 
+    NOGGIT_FORCEINLINE GLuint64 getTextureHandleARB(GLuint texture?);
+    NOGGIT_FORCEINLINE void makeTextureHandleResidentARB(GLuint64 handle);
+    NOGGIT_FORCEINLINE void makeTextureHandleNonResidentARB(GLuint64 handle);
 
     // ========== [[ Named calls ]] ==========
 
@@ -291,6 +295,13 @@ namespace OpenGL
     NOGGIT_FORCEINLINE void namedTextureParameterfEXT(GLuint buffer, GLenum pname, GLfloat param);
     NOGGIT_FORCEINLINE void namedTextureParameterivEXT(GLuint buffer, GLenum pname, GLint const* params);
     NOGGIT_FORCEINLINE void namedTextureParameterfvEXT(GLuint buffer, GLenum pname, GLfloat const* params);
+
+    NOGGIT_FORCEINLINE void namedCopyBufferSubData(GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizei count);
+
+    NOGGIT_FORCEINLINE GLvoid* namedMapBuffer(GLuint buffer, GLenum usage);
+    NOGGIT_FORCEINLINE GLvoid* namedMapBufferRange(GLuint buffer, GLintptr offset, GLsizei size, GLenum usage);
+
+    NOGGIT_FORCEINLINE void namedUnmapBuffer(GLuint buffer);
   };
 }
 

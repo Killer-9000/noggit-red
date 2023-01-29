@@ -216,7 +216,6 @@ namespace Noggit::Ui::Windows
   void NoggitWindow::loadMap(int map_id)
   {
     _minimap->world(nullptr);
-
     if (_world)
       _world.reset();
 
@@ -246,11 +245,9 @@ namespace Noggit::Ui::Windows
     layout->setAlignment(Qt::AlignLeft);
     QListWidget* bookmarks_table(new QListWidget(widget));
     _continents_table = new QListWidget(widget);
-    QObject::connect(_continents_table, &QListWidget::itemClicked, [this](QListWidgetItem* item)
-                     {
-                       loadMap(item->data(Qt::UserRole).toInt());
-                     }
-    );
+    QObject::connect(_continents_table, &QListWidget::currentItemChanged, [this](QListWidgetItem* item, QListWidgetItem* lastItem) {
+        loadMap(item->data(Qt::UserRole).toInt());
+    });
 
     auto mapSearchBar(new QLineEdit(_continents_table));
     mapSearchBar->setFixedWidth(300);

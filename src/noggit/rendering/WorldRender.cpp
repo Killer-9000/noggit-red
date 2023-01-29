@@ -1643,6 +1643,8 @@ bool WorldRender::saveMinimap(TileIndex const& tile_idx, MinimapRenderSettings* 
     auto sstream = std::stringstream();
     sstream << map_name << "\\map" << std::setfill('0') << std::setw(2) << tile_idx.x << "_" << std::setfill('0') << std::setw(2) << tile_idx.z << ".blp";
     std::string tilename_left = sstream.str();
+
+    _world->mapIndex.loadMinimapMD5translate();
     _world->mapIndex._minimap_md5translate[map_name][tilename_left] = tex_name;
 
     if (unload)

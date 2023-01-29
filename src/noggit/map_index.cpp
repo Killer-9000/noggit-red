@@ -25,7 +25,6 @@
 
 #include <cstdlib>
 #include <forward_list>
-#include <omp.h>
 
 MapIndex::MapIndex (const std::string &pBasename, int map_id, World* world,
                     Noggit::NoggitRenderContext context, bool create_empty)
@@ -186,8 +185,6 @@ MapIndex::MapIndex (const std::string &pBasename, int map_id, World* world,
   // -----------------------------------------------------
 
   theFile.close();
-
-  loadMinimapMD5translate();
 }
 
 void MapIndex::saveall (World* world)
@@ -1024,6 +1021,7 @@ uid_fix_status MapIndex::fixUIDs (World* world, bool cancel_on_model_loading_err
 
 void MapIndex::searchMaxUID()
 {
+  #pragma omp parallel for
   for (int z = 0; z < 64 * 64; ++z)
   {
     if (!(mTiles[z / 64][z % 64].flags & 1))
@@ -1077,6 +1075,10 @@ void MapIndex::loadMaxUID()
 
 void MapIndex::loadMinimapMD5translate()
 {
+  // Its the same file, no need to load it every time.
+  if (_minimap_md5translate.size())
+    return;
+
   if (!Noggit::Application::NoggitApplication::instance()->clientData()->exists("textures/minimap/md5translate.trs"))
   {
     LogError << "md5translate.trs was not found. "
@@ -1116,7 +1118,7 @@ void MapIndex::loadMinimapMD5translate()
     {
         std::string text = "Failed to read md5translate.trs.\nLine \"" + line.toStdString() + "\n has no tab spacing. Spacing must be only a tab character and not spaces.";
         LogError << text << std::endl;
-        throw  std::logic_error(text);
+        throw std::logic_error(text);
     }
 
     if (cur_dir.length())

@@ -854,8 +854,8 @@ void MapView::setupStampUi()
 
 void MapView::setupLightEditorUi()
 {
-  //lightEditor = new Noggit::Ui::Tools::LightEditor(this, this);
-  //_tool_panel_dock->registerTool("Light Editor", lightEditor);
+  lightEditor = new Noggit::Ui::Tools::LightEditor(this, this);
+  _tool_panel_dock->registerTool("Light Editor", lightEditor);
 }
 
 void MapView::setupChunkManipulatorUi()

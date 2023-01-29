@@ -311,9 +311,9 @@ static void box_init(struct box *box, const hist_item *achv, const unsigned int 
     box->total_error = -1;
 
     box->color = averagepixels(colors, &achv[ind]);
-    #pragma omp task if (colors > 5000)
+    if (colors > 5000)
     box->variance = box_variance(achv, box);
-    #pragma omp task if (colors > 8000)
+    if (colors > 8000)
     box->max_error = box_max_error(achv, box);
 }
 

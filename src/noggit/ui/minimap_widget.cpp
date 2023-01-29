@@ -141,8 +141,11 @@ namespace Noggit
           // Draw base grid.
           {
             QVector<QLine> gridLines(128);
+
+            #pragma omp parallel for
             for (int i = 1; i < 64; i++) // Vertical
               gridLines[i] = QLine(i * tile_size, 0, i * tile_size, 64 * tile_size);
+            #pragma omp parallel for
             for (int i = 1; i < 64; i++) // Horizontal
               gridLines[i + 64] = QLine(0, i * tile_size, 64 * tile_size, i * tile_size);
 
